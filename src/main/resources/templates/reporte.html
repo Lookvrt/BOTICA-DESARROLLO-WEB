@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes - Ahorro y Salud</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="d-flex">
+    <div th:replace="~{fragment/sidebar :: sidebar('reporte')}"></div>
+
+    <main class="flex-grow-1 p-4 overflow-auto min-vh-100">
+
+        <h3 class="mb-4 fw-semibold">Ventas</h3>
+
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card border border-light-subtle p-3 shadow-sm bg-white rounded-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="p-2 bg-success bg-opacity-50 rounded me-2"></div>
+                        <span class="fw-medium text-dark">Total ventas</span>
+                    </div>
+                    <h4 class="mb-0 text-center fw-semibold mt-2">1245.80</h4>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card border border-light-subtle p-3 shadow-sm bg-white rounded-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="p-2 bg-primary bg-opacity-50 rounded me-2"></div>
+                        <span class="fw-medium text-dark">Nro Ventas</span>
+                    </div>
+                    <h4 class="mb-0 text-center fw-semibold mt-2">12</h4>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card border border-light-subtle p-3 shadow-sm bg-white rounded-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="p-2 bg-danger bg-opacity-50 rounded me-2"></div>
+                        <span class="fw-medium text-dark">Promociones</span>
+                    </div>
+                    <h4 class="mb-0 text-center fw-semibold mt-2">103.81</h4>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card border border-light-subtle p-3 shadow-sm bg-white rounded-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="p-2 bg-warning bg-opacity-50 rounded me-2"></div>
+                        <span class="fw-medium text-dark">Top producto</span>
+                    </div>
+                    <h4 class="mb-0 text-center fw-semibold mt-2 text-dark">Paracetamol</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-lg-8">
+                <div class="card border border-light-subtle p-4 shadow-sm bg-white rounded-3 h-100">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="p-2 bg-success bg-opacity-50 rounded me-2"></div>
+                        <span class="fw-medium text-dark">Venta por dia</span>
+                    </div>
+                    <div class="w-100" style="min-height: 250px;">
+                        <canvas id="ventasChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-lg-4">
+                <div class="card border border-light-subtle p-4 shadow-sm bg-white rounded-3 h-100">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="p-2 bg-danger bg-opacity-50 rounded me-2"></div>
+                        <span class="fw-medium text-dark">Detalle por venta</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table align-middle table-bordered mb-0">
+                            <thead class="bg-light">
+                            <tr class="text-secondary text-center">
+                                <th class="fw-normal py-2">Nro</th>
+                                <th class="fw-normal py-2">Hora</th>
+                                <th class="fw-normal py-2">Total</th>
+                            </tr>
+                            </thead>
+                            <tbody class="text-center">
+                            <tr>
+                                <td class="py-2">V001</td>
+                                <td>14:30</td>
+                                <td>90.00</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2">V002</td>
+                                <td>13:15</td>
+                                <td>65.00</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2">V003</td>
+                                <td>12:30</td>
+                                <td>12.00</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2">V004</td>
+                                <td>11:11</td>
+                                <td>2.50</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2">V005</td>
+                                <td>09:11</td>
+                                <td>14.30</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2">V006</td>
+                                <td>09:08</td>
+                                <td>15.00</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-12 col-md-4">
+                <button class="btn w-100 py-2 fw-bold bg-danger bg-opacity-25 text-dark border-0 rounded-3 d-flex justify-content-center align-items-center gap-2">
+                    <i class="bi bi-filetype-pdf text-danger fs-4"></i> Exportar PDF
+                </button>
+            </div>
+            <div class="col-12 col-md-4">
+                <button class="btn w-100 py-2 fw-bold bg-success bg-opacity-25 text-dark border-0 rounded-3 d-flex justify-content-center align-items-center gap-2">
+                    <i class="bi bi-file-earmark-excel text-success fs-4"></i> Exportar Excel
+                </button>
+            </div>
+            <div class="col-12 col-md-4">
+                <button class="btn w-100 py-2 fw-bold bg-primary bg-opacity-25 text-dark border-0 rounded-3 d-flex justify-content-center align-items-center gap-2">
+                    <i class="bi bi-filetype-csv text-primary fs-4"></i> Exportar a CSV
+                </button>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script th:src="@{/js/reportes.js}"></script>
+</body>
+</html>

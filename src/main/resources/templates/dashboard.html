@@ -10,7 +10,7 @@
 <body class="bg-light">
 
 <div class="d-flex">
-    <div th:replace="~{fragment/sidebar :: sidebar}"></div>
+    <div th:replace="~{fragment/sidebar :: sidebar('dashboard')}"></div>
 
     <main class="flex-grow-1 p-4 overflow-auto min-vh-100">
 
@@ -171,7 +171,6 @@
 
     </main>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script th:src="@{/js/dashboard.js}"></script>
