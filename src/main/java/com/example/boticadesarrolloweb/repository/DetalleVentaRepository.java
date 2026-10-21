@@ -1,8 +1,8 @@
 package com.example.boticadesarrolloweb.repository;
 
-import com.example.boticadesarrolloweb.model.DetalleVentaModel;
+import com.example.boticadesarrolloweb.entity.DetalleVentaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface DetalleVentaRepository extends JpaRepository<DetalleVentaModel, Integer> {
+public interface DetalleVentaRepository extends JpaRepository<DetalleVentaEntity, Integer> {
 
 }

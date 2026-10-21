@@ -1,17 +1,18 @@
-package com.example.boticadesarrolloweb.model;
+package com.example.boticadesarrolloweb.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Entity
 @Table(name = "lotes")
-public class LoteModel {
+public class LoteEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,7 +21,7 @@ public class LoteModel {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_producto", nullable = false)
-    private ProductoModel producto;
+    private ProductoEntity producto;
 
     @Column(name = "numero_lote", nullable = false, length = 50)
     private String numeroLote;

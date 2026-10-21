@@ -1,39 +1,43 @@
-package com.example.boticadesarrolloweb.model;
+package com.example.boticadesarrolloweb.entity;
 
+import com.example.boticadesarrolloweb.enums.EstadoVenta;
+import com.example.boticadesarrolloweb.enums.MetodoPago;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "compras")
-public class CompraModel {
+@Table(name = "ventas")
+public class VentaEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_compra")
-    private Integer idCompra;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_proveedor", nullable = false)
-    private ProveedorModel proveedor;
+    @Column(name = "id_venta")
+    private Integer idVenta;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_usuario", nullable = false)
-    private UsuarioModel usuario;
+    private UsuarioEntity usuario;
 
-    @Column(name = "fecha_compra", nullable = false, insertable = false, updatable = false)
-    private LocalDateTime fechaCompra;
+    @Column(name = "fecha_venta", nullable = false, insertable = false, updatable = false)
+    private LocalDateTime fechaVenta;
 
     @Column(name = "tipo_comprobante", length = 30)
     private String tipoComprobante;
 
     @Column(name = "numero_comprobante", length = 50)
     private String numeroComprobante;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "metodo_pago", nullable = false)
+    @Builder.Default
+    private MetodoPago metodoPago = MetodoPago.EFECTIVO;
 
     @Column(name = "total", nullable = false, precision = 12, scale = 2)
     @Builder.Default
@@ -42,10 +46,5 @@ public class CompraModel {
     @Enumerated(EnumType.STRING)
     @Column(name = "estado", nullable = false)
     @Builder.Default
-    private EstadoCompra estado = EstadoCompra.REGISTRADA;
-
-    public enum EstadoCompra {
-        REGISTRADA,
-        ANULADA
-    }
+    private EstadoVenta estado = EstadoVenta.REGISTRADA;
 }

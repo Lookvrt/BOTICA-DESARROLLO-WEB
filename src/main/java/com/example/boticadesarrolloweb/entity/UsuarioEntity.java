@@ -1,15 +1,21 @@
-package com.example.boticadesarrolloweb.model;
+package com.example.boticadesarrolloweb.entity;
 
+import com.example.boticadesarrolloweb.enums.Rol;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Entity
 @Table(name = "usuarios")
-public class UsuarioModel {
+@SQLDelete(sql = "UPDATE usuarios SET estado = 0 WHERE id_usuario = ?")
+@SQLRestriction("estado = 1")
+public class UsuarioEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,10 +42,4 @@ public class UsuarioModel {
     @Column(name = "estado", nullable = false)
     @Builder.Default
     private Integer estado = 1;
-
-    public enum Rol {
-        ADMINISTRADOR,
-        VENDEDOR,
-        ALMACENERO
-    }
 }

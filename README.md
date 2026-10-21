@@ -26,13 +26,15 @@ Sistema web para el control de inventarios, trazabilidad de lotes y gestión de 
 ```text
 src/main/
 ├── java/com/example/boticadesarrolloweb/
-│   ├── controller/     # Controladores Spring MVC
-│   ├── model/          # Entidades JPA (@Entity)
-│   ├── repository/     # Interfaces de acceso a datos
-│   └── service/        # Lógica de negocio
+│   ├── controller/     # Controladores Spring MVC y Endpoints HTTP
+│   ├── entity/         # Entidades JPA (@Entity) mapeadas a la base de datos
+│   ├── enums/          # Enumeraciones del sistema (Rol, MetodoPago, Estados)
+│   ├── model/          # DTOs y modelos de formulario con validaciones (@NotBlank, @NotNull)
+│   ├── repository/     # Interfaces de acceso a datos (Spring Data JPA)
+│   └── service/        # Lógica de negocio del sistema
 │
 └── resources/
-    ├── static/         # Recursos (css, images, js)
+    ├── static/         # Recursos estáticos (css, images, js)
     └── templates/      # Vistas HTML y componentes reutilizables (fragment/)
 ```
 

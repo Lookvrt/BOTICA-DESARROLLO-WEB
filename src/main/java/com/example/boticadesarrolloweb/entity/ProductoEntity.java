@@ -1,16 +1,21 @@
-package com.example.boticadesarrolloweb.model;
+package com.example.boticadesarrolloweb.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import java.math.BigDecimal;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Entity
 @Table(name = "productos")
-public class ProductoModel {
+@SQLDelete(sql = "UPDATE productos SET estado = 0 WHERE id_producto = ?")
+@SQLRestriction("estado = 1")
+public class ProductoEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,7 +42,7 @@ public class ProductoModel {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_categoria")
-    private CategoriaModel categoria;
+    private CategoriaEntity categoria;
 
     @Column(name = "precio_compra", nullable = false, precision = 10, scale = 2)
     @Builder.Default

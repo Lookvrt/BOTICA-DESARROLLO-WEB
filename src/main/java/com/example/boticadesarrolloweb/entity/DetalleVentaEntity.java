@@ -1,33 +1,34 @@
-package com.example.boticadesarrolloweb.model;
+package com.example.boticadesarrolloweb.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "detalle_compras")
-public class DetalleCompraModel {
+@Table(name = "detalle_ventas")
+public class DetalleVentaEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_detalle_compra")
-    private Integer idDetalleCompra;
+    @Column(name = "id_detalle_venta")
+    private Integer idDetalleVenta;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_compra", nullable = false)
-    private CompraModel compra;
+    @JoinColumn(name = "id_venta", nullable = false)
+    private VentaEntity venta;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_producto", nullable = false)
-    private ProductoModel producto;
+    private ProductoEntity producto;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_lote", nullable = false)
-    private LoteModel lote;
+    private LoteEntity lote;
 
     @Column(name = "cantidad", nullable = false)
     private Integer cantidad;

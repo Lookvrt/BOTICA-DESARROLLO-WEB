@@ -1,15 +1,20 @@
-package com.example.boticadesarrolloweb.model;
+package com.example.boticadesarrolloweb.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Entity
 @Table(name = "proveedores")
-public class ProveedorModel {
+@SQLDelete(sql = "UPDATE proveedores SET estado = 0 WHERE id_proveedor = ?")
+@SQLRestriction("estado = 1")
+public class ProveedorEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
