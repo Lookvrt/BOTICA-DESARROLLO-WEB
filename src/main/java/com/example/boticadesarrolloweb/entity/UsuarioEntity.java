@@ -6,6 +6,8 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -31,6 +33,9 @@ public class UsuarioEntity {
     @Column(name = "usuario", nullable = false, length = 50, unique = true)
     private String usuario;
 
+    @Column(name = "email", nullable = false, length = 150, unique = true)
+    private String email;
+
     @Column(name = "clave", nullable = false, length = 255)
     private String clave;
 
@@ -42,4 +47,11 @@ public class UsuarioEntity {
     @Column(name = "estado", nullable = false)
     @Builder.Default
     private Integer estado = 1;
+
+    // --- 2FA: Código OTP ---
+    @Column(name = "otp_code", length = 6)
+    private String otpCode;
+
+    @Column(name = "otp_expiracion")
+    private LocalDateTime otpExpiracion;
 }
