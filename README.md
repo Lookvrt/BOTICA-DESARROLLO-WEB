@@ -40,41 +40,46 @@ src/main/
 
 ---
 
-## 🚀 Despliegue Local
+## 🚀 Despliegue en Render (Producción en la Nube)
+
+1. En tu dashboard de [Render.com](https://render.com), presiona **New + → Web Service**.
+2. Conecta el repositorio: `Lookvrt/BOTICA-DESARROLLO-WEB` (o tu fork).
+3. Render detectará automáticamente el **Dockerfile**.
+4. En **Environment Variables**, añade las siguientes variables:
+   * `DB_PASSWORD` = `<tu_contraseña_aiven>`
+   * `MAIL_PASSWORD` = `<tu_contraseña_mailtrap>`
+5. Presiona **Deploy Web Service**. Render generará tu URL HTTPS pública automáticamente.
+
+---
+
+## 💻 Ejecución Local (Para el Equipo)
 
 ### Requisitos Previos
-
-* **JDK 25** o superior.
-* **XAMPP** (con servicios Apache y MySQL activos).
+* **JDK 21** o superior.
+* Conexión a Internet (la base de datos está centralizada en Aiven MySQL).
 
 ### Instrucciones de Ejecución
 
 1. **Clonar el repositorio:**
    ```bash
-   git clone https://github.com/tu-usuario/BOTICA-DESARROLLO-WEB.git
+   git clone git@github.com:Lookvrt/BOTICA-DESARROLLO-WEB.git
    cd BOTICA-DESARROLLO-WEB
    ```
 
-2. **Crear la Base de Datos:**
-   Crear un schema vacío en MySQL/phpMyAdmin (Spring Data JPA generará las tablas automáticamente):
-   ```sql
-   CREATE DATABASE botica_db;
-   ```
-
-3. **Verificar Configuración:**
-   Confirmar credenciales de base de datos en `src/main/resources/application.properties`:
-   ```properties
-   spring.datasource.url=jdbc:mysql://localhost:3306/botica_db?useSSL=false&serverTimezone=UTC
-   spring.datasource.username=root
-   spring.datasource.password=
-   ```
-
-4. **Compilar y Correr:**
-   Ejecutar la compilación limpia y desplegar el servidor:
+2. **Configurar credenciales locales:**
+   Copia la plantilla y coloca las contraseñas del equipo:
    ```bash
-   mvn clean install
-   mvn spring-boot:run
+   cp src/main/resources/application-local.properties.example src/main/resources/application-local.properties
    ```
 
-5. **Acceso Web:**
-   Navegar a `http://localhost:8080` desde el explorador.
+3. **Ejecutar el proyecto:**
+   ```bash
+   ./mvnw spring-boot:run
+   ```
+   *(En Windows: `.\mvnw.cmd spring-boot:run`)*
+
+4. **Acceso Web:**
+   * URL: `http://localhost:8080`
+   * Usuario inicial: `admin`
+   * Contraseña: `admin123`
+   * Código OTP 2FA: revisa tu bandeja de Mailtrap o los logs de la terminal.
