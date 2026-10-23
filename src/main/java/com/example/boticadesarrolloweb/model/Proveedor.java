@@ -15,7 +15,7 @@ public class Proveedor {
     @Size(max = 150, message = "La razón social no debe superar los 150 caracteres")
     private String razonSocial;
 
-    @Size(min = 11, max = 11, message = "El RUC debe tener exactamente 11 dígitos")
+    @Pattern(regexp = "^$|[0-9]{11}", message = "El RUC debe tener exactamente 11 dígitos numéricos o dejarse vacío")
     private String ruc;
 
     @Size(max = 200, message = "La dirección no debe superar los 200 caracteres")
