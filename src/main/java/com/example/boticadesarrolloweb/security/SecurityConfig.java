@@ -24,6 +24,8 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     private final UserDetailsServiceImpl userDetailsService;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -31,6 +33,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Recursos públicos
                 .requestMatchers("/", "/login", "/login/otp-redirect", "/verificar-otp", "/reenviar-otp",
+                                 "/oauth2/**", "/login/oauth2/**",
                                  "/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
                 // Solo administrador puede gestionar usuarios
                 .requestMatchers("/usuarios", "/usuarios/**").hasRole("ADMINISTRADOR")
@@ -47,6 +50,12 @@ public class SecurityConfig {
                 .failureUrl("/login?error=true")
                 .permitAll()
             )
+            .oauth2Login(oauth2 -> oauth2
+                .loginPage("/login")
+                .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                .successHandler(oAuth2LoginSuccessHandler)
+                .failureUrl("/login?error=oauth2")
+            )
             .logout(logout -> logout
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/login?logout=true")
@@ -59,11 +68,6 @@ public class SecurityConfig {
             );
 
         return http.build();
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 
     @Bean

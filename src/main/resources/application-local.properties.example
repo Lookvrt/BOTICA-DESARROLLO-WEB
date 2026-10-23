@@ -9,3 +9,7 @@ spring.datasource.password=PEGA_AQUI_PASSWORD_AIVEN
 
 # Contraseña de Mailtrap para recepción de códigos OTP
 spring.mail.password=PEGA_AQUI_PASSWORD_MAILTRAP
+
+# Google OAuth2 (Login con Google)
+spring.security.oauth2.client.registration.google.client-id=PEGA_AQUI_CLIENT_ID
+spring.security.oauth2.client.registration.google.client-secret=PEGA_AQUI_CLIENT_SECRET

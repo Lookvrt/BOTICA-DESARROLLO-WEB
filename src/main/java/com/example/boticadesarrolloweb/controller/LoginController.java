@@ -6,6 +6,7 @@ import com.example.boticadesarrolloweb.service.UsuarioService;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -14,13 +15,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
- * Controlador de Login y verificación OTP (doble autenticación).
+ * Controlador de Login y verificación OTP (doble autenticación opcional).
  *
  * Flujo:
  * 1. GET  /login          → muestra formulario de login
  * 2. POST /login          → Spring Security valida credenciales
- * 3. POST /login/otp-redirect → genera OTP y redirige a /verificar-otp
- * 4. GET  /verificar-otp  → muestra formulario de código OTP
+ * 3. POST /login/otp-redirect → Si 2FA está deshabilitado entra directo al dashboard; si no, genera OTP
+ * 4. GET  /verificar-otp  → muestra formulario de código OTP (si 2FA está activo)
  * 5. POST /verificar-otp  → valida el código y redirige al dashboard
  * 6. POST /reenviar-otp   → reenvía un nuevo código al email
  */
@@ -32,6 +33,9 @@ public class LoginController {
     private final UsuarioService usuarioService;
     private final OtpService otpService;
 
+    @Value("${app.security.2fa.enabled:false}")
+    private boolean twoFactorAuthEnabled;
+
     // ─────────────────────────────────────────────────────────────
     // [1] Mostrar página de Login
     // ─────────────────────────────────────────────────────────────
@@ -40,7 +44,11 @@ public class LoginController {
                         @RequestParam(required = false) String logout,
                         Model model) {
         if (error != null) {
-            model.addAttribute("errorMsg", "Usuario o contraseña incorrectos.");
+            if ("oauth2".equalsIgnoreCase(error)) {
+                model.addAttribute("errorMsg", "No se pudo iniciar sesión con Google. Inténtalo de nuevo.");
+            } else {
+                model.addAttribute("errorMsg", "Usuario o contraseña incorrectos.");
+            }
         }
         if (logout != null) {
             model.addAttribute("logoutMsg", "Sesión cerrada correctamente.");
@@ -50,7 +58,7 @@ public class LoginController {
 
     // ─────────────────────────────────────────────────────────────
     // [3] POST interno: Spring Security llama aquí tras login exitoso
-    //     Genera OTP y guarda usuario en sesión para el paso 2FA
+    //     Si 2FA está activo genera OTP; si está inactivo da paso directo.
     // ─────────────────────────────────────────────────────────────
     @PostMapping("/login/otp-redirect")
     public String otpRedirect(HttpSession session) {
@@ -61,7 +69,28 @@ public class LoginController {
                 .or(() -> usuarioService.buscarPorEmail(username))
                 .orElse(null);
 
-        if (usuario == null || usuario.getEmail() == null) {
+        if (usuario == null) {
+            log.warn("Usuario no encontrado en login redirect: {}", username);
+            return "redirect:/login?error=true";
+        }
+
+        // Si la doble autenticación (2FA) está desactivada: entrar directo sin OTP
+        if (!twoFactorAuthEnabled) {
+            session.setAttribute("otp_verificado", true);
+            session.setAttribute("usuario_autenticado_id", usuario.getIdUsuario());
+            session.setAttribute("usuario_autenticado_rol", usuario.getRol().name());
+            session.setAttribute("usuario_autenticado_nombre", usuario.getNombres());
+
+            log.info("Acceso directo sin 2FA para '{}' (Rol: {})", usuario.getUsuario(), usuario.getRol());
+
+            return switch (usuario.getRol()) {
+                case ADMINISTRADOR -> "redirect:/dashboard";
+                case ALMACENERO    -> "redirect:/alertas";
+                case VENDEDOR      -> "redirect:/venta";
+            };
+        }
+
+        if (usuario.getEmail() == null) {
             log.warn("Usuario sin email configurado: {}", username);
             return "redirect:/login?error=true";
         }
@@ -125,6 +154,16 @@ public class LoginController {
             session.setAttribute("usuario_autenticado_id", usuarioId);
             session.setAttribute("usuario_autenticado_rol", usuario.getRol().name());
             session.setAttribute("usuario_autenticado_nombre", usuario.getNombres());
+
+            // Restaurar contexto de Spring Security para autorizaciones y roles
+            var authorities = java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + usuario.getRol().name()));
+            var authToken = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                    usuario.getUsuario(), null, authorities
+            );
+            var sc = SecurityContextHolder.createEmptyContext();
+            sc.setAuthentication(authToken);
+            SecurityContextHolder.setContext(sc);
+            session.setAttribute(org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, sc);
 
             // Redirigir según rol
             return switch (usuario.getRol()) {
