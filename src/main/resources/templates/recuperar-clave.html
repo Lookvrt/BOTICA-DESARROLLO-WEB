@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragment/head :: common-head('Recuperar Contraseña')}">
+</head>
+<body class="bg-body d-flex align-items-center justify-content-center min-vh-100 m-0 py-4">
+
+    <main class="bg-white p-4 p-sm-5 rounded-3 shadow col-11 col-sm-9 col-md-6 col-lg-5 col-xl-4">
+
+        <!-- Encabezado con Icono -->
+        <div class="text-center mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3" style="width: 60px; height: 60px;">
+                <i class="bi bi-shield-lock-fill fs-2"></i>
+            </div>
+            <h2 class="fs-4 fw-bold mb-1">Recuperar Contraseña</h2>
+            <p class="text-muted small mb-0">Sigue los pasos para restablecer el acceso a tu cuenta</p>
+        </div>
+
+        <!-- Indicador de pasos visual -->
+        <div class="d-flex align-items-center justify-content-between mb-4 px-2">
+            <div class="text-center">
+                <span class="badge rounded-pill" th:classappend="${paso == 1 ? 'bg-primary' : (paso > 1 ? 'bg-success' : 'bg-secondary bg-opacity-25 text-dark')}">1</span>
+                <div class="small mt-1 text-muted" style="font-size: 0.75rem;">Usuario</div>
+            </div>
+            <div class="flex-grow-1 mx-2 border-top border-2" th:classappend="${paso > 1 ? 'border-success' : 'border-light-subtle'}"></div>
+            <div class="text-center">
+                <span class="badge rounded-pill" th:classappend="${paso == 2 ? 'bg-primary' : (paso > 2 ? 'bg-success' : 'bg-secondary bg-opacity-25 text-dark')}">2</span>
+                <div class="small mt-1 text-muted" style="font-size: 0.75rem;">Código</div>
+            </div>
+            <div class="flex-grow-1 mx-2 border-top border-2" th:classappend="${paso > 2 ? 'border-success' : 'border-light-subtle'}"></div>
+            <div class="text-center">
+                <span class="badge rounded-pill" th:classappend="${paso == 3 ? 'bg-primary' : 'bg-secondary bg-opacity-25 text-dark'}">3</span>
+                <div class="small mt-1 text-muted" style="font-size: 0.75rem;">Nueva Clave</div>
+            </div>
+        </div>
+
+        <!-- Alertas de Error y Éxito -->
+        <div th:if="${errorMsg}" class="alert alert-danger py-2 mb-3 small" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            <span th:text="${errorMsg}"></span>
+        </div>
+        <div th:if="${infoMsg}" class="alert alert-info py-2 mb-3 small" role="alert">
+            <i class="bi bi-info-circle-fill me-1"></i>
+            <span th:text="${infoMsg}"></span>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- PASO 1: Ingresar Usuario o Correo Electrónico             -->
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <div th:if="${paso == 1}">
+            <form th:action="@{/recuperar-clave/solicitar}" method="post">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                <div class="mb-3">
+                    <label for="identificador" class="form-label fw-semibold">Usuario o Correo Electrónico</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-muted border-end-0">
+                            <i class="bi bi-person"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0 ps-0 shadow-none"
+                               id="identificador" name="identificador"
+                               placeholder="Ej: admin o usuario@correo.com" required autofocus>
+                    </div>
+                    <div class="form-text text-muted small">
+                        Te enviaremos un código de seguridad de 6 dígitos a tu correo registrado.
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                    Enviar código de verificación
+                </button>
+            </form>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- PASO 2: Ingresar Código OTP de 6 Dígitos                  -->
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <div th:if="${paso == 2}">
+            <p class="text-muted small text-center mb-3">
+                Hemos enviado un código a: <strong th:text="${emailEnmascarado}">correo@ejemplo.com</strong>
+            </p>
+
+            <form th:action="@{/recuperar-clave/verificar}" method="post" class="mb-3">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                <div class="mb-3">
+                    <label for="codigo" class="form-label fw-semibold">Código de Verificación</label>
+                    <input type="text" class="form-control form-control-lg text-center letter-spacing fw-bold fs-3 shadow-none"
+                           id="codigo" name="codigo" maxlength="6" pattern="[0-9]{6}"
+                           placeholder="000000" inputmode="numeric" required autofocus>
+                    <div class="form-text text-muted text-center small mt-1">
+                        Válido por 5 minutos
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                    Validar código
+                </button>
+            </form>
+
+            <form th:action="@{/recuperar-clave/reenviar}" method="post" class="text-center mb-2">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit" class="btn btn-link btn-sm text-decoration-none text-muted p-0">
+                    <i class="bi bi-arrow-clockwise"></i> ¿No recibiste el código? Reenviar
+                </button>
+            </form>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- PASO 3: Establecer Nueva Contraseña                      -->
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <div th:if="${paso == 3}">
+            <form th:action="@{/recuperar-clave/cambiar}" method="post">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                <div class="mb-3">
+                    <label for="nuevaClave" class="form-label fw-semibold">Nueva Contraseña</label>
+                    <input type="password" class="form-control shadow-none"
+                           id="nuevaClave" name="nuevaClave"
+                           minlength="6" placeholder="Mínimo 6 caracteres" required autofocus>
+                </div>
+
+                <div class="mb-4">
+                    <label for="confirmarClave" class="form-label fw-semibold">Confirmar Nueva Contraseña</label>
+                    <input type="password" class="form-control shadow-none"
+                           id="confirmarClave" name="confirmarClave"
+                           minlength="6" placeholder="Repite tu nueva contraseña" required>
+                </div>
+
+                <button type="submit" class="btn btn-success w-100 py-2 fw-semibold">
+                    Guardar nueva contraseña
+                </button>
+            </form>
+        </div>
+
+        <!-- Enlace para volver o cancelar -->
+        <div class="text-center mt-4 pt-2 border-top">
+            <a th:href="@{/recuperar-clave/cancelar}" class="text-decoration-none text-secondary small fw-medium">
+                <i class="bi bi-arrow-left"></i> Volver a Iniciar Sesión
+            </a>
+        </div>
+
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+</body>
+</html>

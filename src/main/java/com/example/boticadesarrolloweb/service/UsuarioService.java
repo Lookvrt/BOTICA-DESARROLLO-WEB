@@ -90,4 +90,14 @@ public class UsuarioService {
     public boolean existeEmail(String email) {
         return usuarioRepository.existsByEmail(email);
     }
+
+    /** Actualiza directamente la clave del usuario cifrándola y limpia tokens OTP */
+    public void cambiarClave(Integer idUsuario, String nuevaClave) {
+        UsuarioEntity usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        usuario.setClave(passwordEncoder.encode(nuevaClave));
+        usuario.setOtpCode(null);
+        usuario.setOtpExpiracion(null);
+        usuarioRepository.save(usuario);
+    }
 }

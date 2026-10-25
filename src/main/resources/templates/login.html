@@ -10,12 +10,15 @@
         <!-- Token CSRF si aplica -->
         <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 
-        <!-- Mensajes de Error o Logout -->
+        <!-- Mensajes de Error, Logout o Recuperación -->
         <div th:if="${errorMsg}" class="alert alert-danger py-2 col-12 mb-2" role="alert">
             <span th:text="${errorMsg}">Usuario o contraseña incorrectos.</span>
         </div>
         <div th:if="${logoutMsg}" class="alert alert-success py-2 col-12 mb-2" role="alert">
             <span th:text="${logoutMsg}">Sesión cerrada correctamente.</span>
+        </div>
+        <div th:if="${param.recuperado}" class="alert alert-success py-2 col-12 mb-2" role="alert">
+            <span>¡Contraseña actualizada con éxito! Ya puedes iniciar sesión con tu nueva contraseña.</span>
         </div>
 
         <div class="col-12">
@@ -55,7 +58,7 @@
     </a>
 
     <div class="text-center mt-3">
-        <a href="#" class="text-decoration-none small text-primary">¿Olvidaste tu contraseña?</a>
+        <a th:href="@{/recuperar-clave}" class="text-decoration-none small text-primary fw-medium">¿Olvidaste tu contraseña?</a>
     </div>
 
     </main>

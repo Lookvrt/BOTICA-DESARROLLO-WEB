@@ -33,6 +33,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Recursos públicos
                 .requestMatchers("/", "/login", "/login/otp-redirect", "/verificar-otp", "/reenviar-otp",
+                                 "/recuperar-clave", "/recuperar-clave/**",
                                  "/oauth2/**", "/login/oauth2/**",
                                  "/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
                 // Solo administrador puede gestionar usuarios
@@ -50,6 +51,12 @@ public class SecurityConfig {
                 .failureUrl("/login?error=true")
                 .permitAll()
             )
+            .rememberMe(remember -> remember
+                .key("botica-secreta-remember-me-key-2026")
+                .tokenValiditySeconds(86400 * 7) // Recordar sesión por 7 días
+                .rememberMeParameter("remember-me")
+                .userDetailsService(userDetailsService)
+            )
             .oauth2Login(oauth2 -> oauth2
                 .loginPage("/login")
                 .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
@@ -60,7 +67,7 @@ public class SecurityConfig {
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/login?logout=true")
                 .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID")
+                .deleteCookies("JSESSIONID", "remember-me")
                 .permitAll()
             )
             .sessionManagement(session -> session

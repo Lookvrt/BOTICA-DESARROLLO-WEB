@@ -102,4 +102,41 @@ public class OtpService {
         );
         mailSender.send(mensaje);
     }
+
+    /**
+     * Genera un código OTP específicamente para la recuperación de contraseña,
+     * lo almacena en BD y lo envía al correo del usuario.
+     */
+    public void generarYEnviarOtpRecuperacion(UsuarioEntity usuario) {
+        String otp = String.format("%06d", new Random().nextInt(999999));
+        LocalDateTime expiracion = LocalDateTime.now().plusMinutes(OTP_DURACION_MINUTOS);
+
+        usuario.setOtpCode(otp);
+        usuario.setOtpExpiracion(expiracion);
+        usuarioRepository.save(usuario);
+
+        try {
+            SimpleMailMessage mensaje = new SimpleMailMessage();
+            mensaje.setFrom(emailRemitente);
+            mensaje.setTo(usuario.getEmail());
+            mensaje.setSubject("🔑 Recuperación de contraseña — Botica Ahorro y Salud");
+            mensaje.setText(
+                    "Hola " + usuario.getNombres() + ",\n\n" +
+                    "Recibimos una solicitud para restablecer la contraseña de tu cuenta.\n" +
+                    "Tu código de verificación de 6 dígitos es:\n\n" +
+                    "  ➡  " + otp + "\n\n" +
+                    "Este código expirará en " + OTP_DURACION_MINUTOS + " minutos.\n" +
+                    "Si no solicitaste este cambio, puedes ignorar este mensaje de forma segura.\n\n" +
+                    "— Equipo de Seguridad Botica Ahorro y Salud"
+            );
+            mailSender.send(mensaje);
+            log.info("📧 Email de recuperación OTP enviado con éxito a: {}", usuario.getEmail());
+        } catch (Exception e) {
+            log.warn("⚠️ No se pudo enviar el email de recuperación OTP (revisa credenciales SMTP): {}", e.getMessage());
+        }
+
+        log.info("=================================================");
+        log.info("🔑 [RECUPERACIÓN] CÓDIGO OTP PARA '{}': {}", usuario.getUsuario(), otp);
+        log.info("=================================================");
+    }
 }
