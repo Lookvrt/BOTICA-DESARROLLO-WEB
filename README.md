@@ -15,9 +15,9 @@ Sistema web para el control de inventarios, trazabilidad de lotes y gestión de 
 
 ## 🛠️ Tech Stack
 
-* **Backend:** Java 25, Spring Boot, Spring Data JPA, Lombok
+* **Backend:** Java 21, Spring Boot, Spring Data JPA, Lombok
 * **Frontend:** HTML5, Bootstrap 5, Thymeleaf, JavaScript
-* **Base de Datos:** MySQL (XAMPP)
+* **Base de Datos:** MySQL
 
 ---
 
