@@ -28,8 +28,15 @@ public class CompraEntity {
     @JoinColumn(name = "id_usuario", nullable = false)
     private UsuarioEntity usuario;
 
-    @Column(name = "fecha_compra", nullable = false, insertable = false, updatable = false)
+    @Column(name = "fecha_compra", nullable = false)
     private LocalDateTime fechaCompra;
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.fechaCompra == null) {
+            this.fechaCompra = LocalDateTime.now();
+        }
+    }
 
     @Column(name = "tipo_comprobante", length = 30)
     private String tipoComprobante;

@@ -1,5 +1,6 @@
 package com.example.boticadesarrolloweb.model;
 
+import com.example.boticadesarrolloweb.enums.EstadoCompra;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -33,8 +34,4 @@ public class Compra {
     @Builder.Default
     private EstadoCompra estado = EstadoCompra.REGISTRADA;
 
-    public enum EstadoCompra {
-        REGISTRADA,
-        ANULADA
-    }
 }

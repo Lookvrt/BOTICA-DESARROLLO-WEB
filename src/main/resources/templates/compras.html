@@ -14,8 +14,8 @@
         <div class="card border border-light-subtle p-4 shadow-sm bg-white rounded-3">
 
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <span class="fw-medium fs-5">339 productos</span>
-                <button class="btn btn-light bg-white border px-3 fw-medium text-dark">
+                <span class="fw-medium fs-5" th:text="|${#lists.size(compras)} compras|"></span>
+                <button class="btn btn-light bg-white border px-3 fw-medium text-dark" data-bs-toggle="modal" data-bs-target="#nuevaCompra">
                     + Nuevo
                 </button>
             </div>
@@ -62,36 +62,26 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr class="border-bottom">
-                        <td class="py-3">C001</td>
-                        <td>02/10/2026</td>
-                        <td>Laboratorios Portugal</td>
-                        <td>FA/F001-1</td>
-                        <td>1250.00</td>
-                        <td class="text-end">
-                            <button class="btn btn-link text-dark p-1 text-decoration-none me-2">
-                                <i class="bi bi-pencil fs-5"></i>
-                            </button>
-                            <button class="btn btn-link text-dark p-1 text-decoration-none">
-                                <i class="bi bi-trash fs-5"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    <tr class="border-bottom">
-                        <td class="py-3">C002</td>
-                        <td>30/09/2026</td>
-                        <td>Pharma Group</td>
-                        <td>BO/BO01-1</td>
-                        <td>320.00</td>
-                        <td class="text-end">
-                            <button class="btn btn-link text-dark p-1 text-decoration-none me-2">
-                                <i class="bi bi-pencil fs-5"></i>
-                            </button>
-                            <button class="btn btn-link text-dark p-1 text-decoration-none">
-                                <i class="bi bi-trash fs-5"></i>
-                            </button>
-                        </td>
-                    </tr>
+                        <tr th:each="c : ${compras}" th:if="${c.estado != null and c.estado.name() != 'ANULADA'}" class="border-bottom">
+                            <td class="py-3" th:text="${c.idCompra}"></td>
+                            <td th:text="${c.fechaCompra != null ? #temporals.format(c.fechaCompra, 'dd/MM/yyyy') : '-'}"></td>
+                            <td th:text="${c.proveedor != null ? c.proveedor.razonSocial : '-'}"></td>
+                            <td th:text="${(c.tipoComprobante ?: '') + '/' + (c.numeroComprobante ?: '')}"></td>
+                            <td th:text="${#numbers.formatDecimal(c.total, 1, 2)}"></td>
+                            <td class="text-end">
+                                <a th:href="@{/compras/editar/{id}(id=${c.idCompra})}"
+                                   class="btn btn-link text-dark p-1 text-decoration-none me-2" title="Editar compra">
+                                    <i class="bi bi-pencil fs-5"></i>
+                                </a>
+
+                                <form th:action="@{/compras/anular/{id}(id=${c.idCompra})}" method="post" class="d-inline"
+                                      onsubmit="return confirm('¿Deseas anular esta compra?');">
+                                    <button type="submit" class="btn btn-link text-dark p-1 text-decoration-none" title="Anular compra">
+                                        <i class="bi bi-trash fs-5"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -113,6 +103,115 @@
     </main>
 </div>
 
+<!--Modal para nueva compra-->
+<div class="modal fade" id="nuevaCompra" tabindex="-1" aria-hidden="true" th:data-abrir="${modalAbrir == 'nuevo'}">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <form th:action="@{/compras/guardar}" method="post" th:object="${compra}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nueva compra</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <label class="form-label">Proveedor</label>
+                    <select th:field="*{idProveedor}" class="form-select mb-3" required>
+                        <option value="">Seleccionar proveedor</option>
+                        <option th:each="p : ${proveedores}" th:value="${p.idProveedor}" th:text="${p.razonSocial}"></option>
+                    </select>
+
+                    <div class="mb-3">
+                        <label for="idUsuario" class="form-label">Usuario responsable</label>
+                        <select id="idUsuario" th:field="*{idUsuario}" class="form-select" required>
+                            <option value="">Seleccione un usuario</option>
+                            <option th:each="u : ${usuarios}" th:value="${u.idUsuario}" th:text="${u.nombres + ' ' + u.apellidos}"></option>
+                        </select>
+                        <div class="text-danger" th:if="${#fields.hasErrors('idUsuario')}" th:errors="*{idUsuario}"></div>
+                    </div>
+
+                    <label class="form-label">Tipo de comprobante</label>
+                    <select th:field="*{tipoComprobante}" class="form-select mb-3" required>
+                        <option value="">Seleccionar tipo</option>
+                        <option value="FA">Factura</option>
+                        <option value="BO">Boleta</option>
+                    </select>
+
+                    <label class="form-label">Número de comprobante</label>
+                    <input type="text" th:field="*{numeroComprobante}" class="form-control mb-3" maxlength="50" required>
+
+                    <label class="form-label">Total (S/)</label>
+                    <input type="number" th:field="*{total}" class="form-control" min="0.01" step="0.01" required>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Registrar compra</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!--Editar compra-->
+<div class="modal fade" id="editarCompra" tabindex="-1" aria-hidden="true" th:data-abrir="${modalAbrir == 'editar'}">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/compras/guardar}" method="post" th:object="${compra}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar compra</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" th:field="*{idCompra}">
+
+                    <label class="form-label">Proveedor</label>
+                    <select th:field="*{idProveedor}" class="form-select mb-3" required>
+                        <option th:each="p : ${proveedores}" th:value="${p.idProveedor}" th:text="${p.razonSocial}">
+                        </option>
+                    </select>
+
+                    <div class="mb-3">
+                        <label for="idUsuario-edi" class="form-label">Usuario responsable</label>
+                        <select id="idUsuario-edi" th:field="*{idUsuario}" class="form-select" required>
+                            <option value="">Seleccione un usuario</option>
+                            <option th:each="u : ${usuarios}" th:value="${u.idUsuario}" th:text="${u.nombres + ' ' + u.apellidos}"></option>
+                        </select>
+                        <div class="text-danger" th:if="${#fields.hasErrors('idUsuario')}" th:errors="*{idUsuario}"></div>
+                    </div>
+
+                    <label class="form-label">Tipo de comprobante</label>
+                    <select th:field="*{tipoComprobante}" class="form-select mb-3" required>
+                        <option value="FA">Factura</option>
+                        <option value="BO">Boleta</option>
+                    </select>
+
+                    <label class="form-label">Número de comprobante</label>
+                    <input type="text" th:field="*{numeroComprobante}" class="form-control mb-3" maxlength="50" required>
+
+                    <label class="form-label">Total (S/)</label>
+                    <input type="number" th:field="*{total}" class="form-control" min="0.01" step="0.01" required>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:if="${mensaje}" class="alert alert-success alert-dismissible fade show" role="alert">
+    <span th:text="${mensaje}"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <span th:text="${error}"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+<script src="/js/compras.js"></script>
 </body>
 </html>
