@@ -9,105 +9,105 @@
 
     <main class="flex-grow-1 p-4 overflow-auto min-vh-100">
 
-        <h3 class="mb-4 fw-semibold">Ventas</h3>
+        <h3 class="mb-4 fw-bold text-dark">Reporte General de Ventas</h3>
 
+        <!-- Tarjetas Metricas del Reporte -->
         <div class="row g-3 mb-4">
             <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card border border-light-subtle p-3 shadow-sm bg-white rounded-3">
+                <div class="card border-0 p-3 shadow-sm bg-white rounded-3">
                     <div class="d-flex align-items-center mb-2">
-                        <div class="p-2 bg-success bg-opacity-50 rounded me-2"></div>
-                        <span class="fw-medium text-dark">Total ventas</span>
+                        <div class="p-2 bg-success bg-opacity-10 text-success rounded-3 me-2">
+                            <i class="bi bi-cash-stack fs-4"></i>
+                        </div>
+                        <span class="fw-semibold text-secondary">Total Ventas</span>
                     </div>
-                    <h4 class="mb-0 text-center fw-semibold mt-2">1245.80</h4>
+                    <h4 class="mb-0 text-center fw-bold mt-2 text-dark" th:text="${'S/ ' + #numbers.formatDecimal(totalVentas, 1, 'COMMA', 2, 'POINT')}">S/ 0.00</h4>
                 </div>
             </div>
             <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card border border-light-subtle p-3 shadow-sm bg-white rounded-3">
+                <div class="card border-0 p-3 shadow-sm bg-white rounded-3">
                     <div class="d-flex align-items-center mb-2">
-                        <div class="p-2 bg-primary bg-opacity-50 rounded me-2"></div>
-                        <span class="fw-medium text-dark">Nro Ventas</span>
+                        <div class="p-2 bg-primary bg-opacity-10 text-primary rounded-3 me-2">
+                            <i class="bi bi-receipt fs-4"></i>
+                        </div>
+                        <span class="fw-semibold text-secondary">N° de Ventas</span>
                     </div>
-                    <h4 class="mb-0 text-center fw-semibold mt-2">12</h4>
+                    <h4 class="mb-0 text-center fw-bold mt-2 text-dark" th:text="${nroVentas}">0</h4>
                 </div>
             </div>
             <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card border border-light-subtle p-3 shadow-sm bg-white rounded-3">
+                <div class="card border-0 p-3 shadow-sm bg-white rounded-3">
                     <div class="d-flex align-items-center mb-2">
-                        <div class="p-2 bg-danger bg-opacity-50 rounded me-2"></div>
-                        <span class="fw-medium text-dark">Promociones</span>
+                        <div class="p-2 bg-info bg-opacity-10 text-info rounded-3 me-2">
+                            <i class="bi bi-calculator fs-4"></i>
+                        </div>
+                        <span class="fw-semibold text-secondary">Ticket Promedio</span>
                     </div>
-                    <h4 class="mb-0 text-center fw-semibold mt-2">103.81</h4>
+                    <h4 class="mb-0 text-center fw-bold mt-2 text-dark" th:text="${'S/ ' + #numbers.formatDecimal(promedioVenta, 1, 'COMMA', 2, 'POINT')}">S/ 0.00</h4>
                 </div>
             </div>
             <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card border border-light-subtle p-3 shadow-sm bg-white rounded-3">
+                <div class="card border-0 p-3 shadow-sm bg-white rounded-3">
                     <div class="d-flex align-items-center mb-2">
-                        <div class="p-2 bg-warning bg-opacity-50 rounded me-2"></div>
-                        <span class="fw-medium text-dark">Top producto</span>
+                        <div class="p-2 bg-warning bg-opacity-10 text-warning rounded-3 me-2">
+                            <i class="bi bi-trophy-fill fs-4"></i>
+                        </div>
+                        <span class="fw-semibold text-secondary">Top Producto</span>
                     </div>
-                    <h4 class="mb-0 text-center fw-semibold mt-2 text-dark">Paracetamol</h4>
+                    <h4 class="mb-0 text-center fw-bold mt-2 text-dark text-truncate" th:text="${topProducto}">Sin ventas</h4>
                 </div>
             </div>
         </div>
 
+        <!-- Seccion Grafico y Detalle de Ventas -->
         <div class="row g-3 mb-4">
             <div class="col-12 col-lg-8">
-                <div class="card border border-light-subtle p-4 shadow-sm bg-white rounded-3 h-100">
-                    <div class="d-flex align-items-center mb-4">
-                        <div class="p-2 bg-success bg-opacity-50 rounded me-2"></div>
-                        <span class="fw-medium text-dark">Venta por dia</span>
+                <div class="card border-0 p-4 shadow-sm bg-white rounded-3 h-100">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div class="d-flex align-items-center">
+                            <div class="p-2 bg-success bg-opacity-10 text-success rounded-3 me-2">
+                                <i class="bi bi-bar-chart-line fs-5"></i>
+                            </div>
+                            <span class="fw-bold text-dark">Distribución de Ventas</span>
+                        </div>
+
+                        <div class="btn-group btn-group-sm" id="reportPeriodSelector">
+                            <button type="button" class="btn btn-outline-success" data-period="hoy">Hoy</button>
+                            <button type="button" class="btn btn-success text-white active" data-period="semana">Semana</button>
+                            <button type="button" class="btn btn-outline-success" data-period="mes">Mes</button>
+                        </div>
                     </div>
-                    <div class="w-100" style="min-height: 250px;">
+                    <div class="w-100" style="min-height: 280px;">
                         <canvas id="ventasChart"></canvas>
                     </div>
                 </div>
             </div>
 
             <div class="col-12 col-lg-4">
-                <div class="card border border-light-subtle p-4 shadow-sm bg-white rounded-3 h-100">
+                <div class="card border-0 p-4 shadow-sm bg-white rounded-3 h-100">
                     <div class="d-flex align-items-center mb-3">
-                        <div class="p-2 bg-danger bg-opacity-50 rounded me-2"></div>
-                        <span class="fw-medium text-dark">Detalle por venta</span>
+                        <div class="p-2 bg-primary bg-opacity-10 text-primary rounded-3 me-2">
+                            <i class="bi bi-clock-history fs-5"></i>
+                        </div>
+                        <span class="fw-bold text-dark">Últimas Transacciones</span>
                     </div>
                     <div class="table-responsive">
-                        <table class="table align-middle table-bordered mb-0">
-                            <thead class="bg-light">
-                            <tr class="text-secondary text-center">
-                                <th class="fw-normal py-2">Nro</th>
-                                <th class="fw-normal py-2">Hora</th>
-                                <th class="fw-normal py-2">Total</th>
+                        <table class="table align-middle table-hover mb-0">
+                            <thead class="table-light">
+                            <tr class="text-secondary text-center small">
+                                <th>Comprobante</th>
+                                <th>Fecha/Hora</th>
+                                <th>Total</th>
                             </tr>
                             </thead>
                             <tbody class="text-center">
-                            <tr>
-                                <td class="py-2">V001</td>
-                                <td>14:30</td>
-                                <td>90.00</td>
+                            <tr th:each="v : ${ventasRecientes}">
+                                <td class="py-2 fw-semibold text-dark" th:text="${v.numeroComprobante != null ? v.numeroComprobante : 'V00' + v.idVenta}">V001</td>
+                                <td class="small text-muted" th:text="${v.fechaVenta != null ? #temporals.format(v.fechaVenta, 'dd/MM HH:mm') : '-'}">14:30</td>
+                                <td class="fw-bold text-success" th:text="${'S/ ' + #numbers.formatDecimal(v.total, 1, 'COMMA', 2, 'POINT')}">S/ 0.00</td>
                             </tr>
-                            <tr>
-                                <td class="py-2">V002</td>
-                                <td>13:15</td>
-                                <td>65.00</td>
-                            </tr>
-                            <tr>
-                                <td class="py-2">V003</td>
-                                <td>12:30</td>
-                                <td>12.00</td>
-                            </tr>
-                            <tr>
-                                <td class="py-2">V004</td>
-                                <td>11:11</td>
-                                <td>2.50</td>
-                            </tr>
-                            <tr>
-                                <td class="py-2">V005</td>
-                                <td>09:11</td>
-                                <td>14.30</td>
-                            </tr>
-                            <tr>
-                                <td class="py-2">V006</td>
-                                <td>09:08</td>
-                                <td>15.00</td>
+                            <tr th:if="${#lists.isEmpty(ventasRecientes)}">
+                                <td colspan="3" class="text-muted py-4">No hay registros de ventas.</td>
                             </tr>
                             </tbody>
                         </table>
@@ -116,24 +116,59 @@
             </div>
         </div>
 
-        <div class="row g-3">
-            <div class="col-12 col-md-4">
-                <button class="btn w-100 py-2 fw-bold bg-danger bg-opacity-25 text-dark border-0 rounded-3 d-flex justify-content-center align-items-center gap-2">
-                    <i class="bi bi-filetype-pdf text-danger fs-4"></i> Exportar PDF
-                </button>
+        <!-- Seccion de Exportación de Reportes (Alineado con el ancho de los graficos) -->
+        <div class="card border-0 p-3 shadow-sm bg-white rounded-3 mb-4">
+            <div class="d-flex align-items-center mb-3">
+                <div class="d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-3 me-2" style="width: 38px; height: 38px;">
+                    <i class="bi bi-download fs-5"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-0 text-dark">Exportar Reportes del Sistema</h6>
+                    <small class="text-muted">Descarga de datos consolidados en diferentes formatos</small>
+                </div>
             </div>
-            <div class="col-12 col-md-4">
-                <button class="btn w-100 py-2 fw-bold bg-success bg-opacity-25 text-dark border-0 rounded-3 d-flex justify-content-center align-items-center gap-2">
-                    <i class="bi bi-file-earmark-excel text-success fs-4"></i> Exportar Excel
-                </button>
-            </div>
-            <div class="col-12 col-md-4">
-                <button class="btn w-100 py-2 fw-bold bg-primary bg-opacity-25 text-dark border-0 rounded-3 d-flex justify-content-center align-items-center gap-2">
-                    <i class="bi bi-filetype-csv text-primary fs-4"></i> Exportar a CSV
-                </button>
+
+            <div class="row g-3">
+                <!-- Botón Exportar Excel -->
+                <div class="col-12 col-md-4">
+                    <a th:href="@{/reporte/exportar/excel}"
+                       id="btnExportExcel"
+                       class="btn w-100 py-3 fw-bold bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-3 d-flex justify-content-center align-items-center gap-2 shadow-sm btn-export-hover">
+                        <i class="bi bi-file-earmark-excel-fill fs-4"></i>
+                        <span>Exportar a Excel</span>
+                    </a>
+                </div>
+
+                <!-- Botón Exportar PDF -->
+                <div class="col-12 col-md-4">
+                    <a th:href="@{/reporte/exportar/pdf}"
+                       class="btn w-100 py-3 fw-bold bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-3 d-flex justify-content-center align-items-center gap-2 shadow-sm btn-export-hover">
+                        <i class="bi bi-file-earmark-pdf-fill fs-4"></i>
+                        <span>Exportar a PDF</span>
+                    </a>
+                </div>
+
+                <!-- Botón Exportar CSV -->
+                <div class="col-12 col-md-4">
+                    <a th:href="@{/reporte/exportar/csv}"
+                       id="btnExportCSV"
+                       class="btn w-100 py-3 fw-bold bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-3 d-flex justify-content-center align-items-center gap-2 shadow-sm btn-export-hover">
+                        <i class="bi bi-filetype-csv fs-4"></i>
+                        <span>Exportar a CSV</span>
+                    </a>
+                </div>
             </div>
         </div>
 
+        <style>
+            .btn-export-hover {
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+            }
+            .btn-export-hover:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 0.4rem 0.8rem rgba(0, 0, 0, 0.08) !important;
+            }
+        </style>
     </main>
 </div>
 

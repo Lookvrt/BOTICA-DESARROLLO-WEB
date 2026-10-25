@@ -9,118 +9,213 @@
 
     <main class="flex-grow-1 p-4 overflow-auto min-vh-100">
 
-        <div class="row g-3 mb-4">
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card border-0 p-3 shadow-sm bg-white rounded-3">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="d-flex align-items-center justify-content-center bg-info bg-opacity-25 rounded-3 me-2" style="width: 40px; height: 40px;">
-                            <i class="bi bi-currency-dollar text-info fs-5"></i>
-                        </div>
-                        <span class="fw-bold text-secondary">Ventas hoy</span>
-                    </div>
-                    <h3 class="fw-bold mb-0">1245.80</h3>
+        <!-- Accesos Rápidos -->
+        <div class="card border-0 p-3 shadow-sm bg-white rounded-3 mb-4">
+            <div class="d-flex align-items-center mb-3">
+                <div class="d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-3 me-2" style="width: 38px; height: 38px;">
+                    <i class="bi bi-lightning-charge-fill fs-5"></i>
                 </div>
+                <h6 class="fw-bold mb-0 text-dark">Accesos Rápidos del Sistema</h6>
             </div>
 
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card border-0 p-3 shadow-sm bg-white rounded-3">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="d-flex align-items-center justify-content-center bg-primary bg-opacity-25 rounded-3 me-2" style="width: 40px; height: 40px;">
-                            <i class="bi bi-box-seam text-primary fs-5"></i>
+            <div class="row g-3">
+                <div class="col-12 col-sm-6 col-md-4 col-xl-2">
+                    <a th:href="@{/venta}" class="btn btn-light border text-start w-100 p-3 rounded-3 shadow-sm h-100 d-flex flex-column justify-content-between quick-access-card border-info-subtle">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="badge bg-info bg-opacity-10 text-info p-2 rounded-3">
+                                <i class="bi bi-cart-plus-fill fs-4"></i>
+                            </span>
+                            <i class="bi bi-arrow-right-short text-muted fs-4"></i>
                         </div>
-                        <span class="fw-bold text-secondary">Productos</span>
-                    </div>
-                    <h3 class="fw-bold mb-0">342</h3>
+                        <div>
+                            <div class="fw-bold text-dark mb-0">Nueva Venta</div>
+                            <small class="text-muted">Punto de venta POS</small>
+                        </div>
+                    </a>
                 </div>
-            </div>
 
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card border-0 p-3 shadow-sm bg-white rounded-3">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="d-flex align-items-center justify-content-center bg-danger bg-opacity-25 rounded-3 me-2" style="width: 40px; height: 40px;">
-                            <i class="bi bi-exclamation-triangle text-danger fs-5"></i>
+                <div class="col-12 col-sm-6 col-md-4 col-xl-2">
+                    <a th:href="@{/compras}" class="btn btn-light border text-start w-100 p-3 rounded-3 shadow-sm h-100 d-flex flex-column justify-content-between quick-access-card border-primary-subtle">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="badge bg-primary bg-opacity-10 text-primary p-2 rounded-3">
+                                <i class="bi bi-bag-plus-fill fs-4"></i>
+                            </span>
+                            <i class="bi bi-arrow-right-short text-muted fs-4"></i>
                         </div>
-                        <span class="fw-bold text-secondary">Stock crítico</span>
-                    </div>
-                    <h3 class="fw-bold mb-0">12</h3>
+                        <div>
+                            <div class="fw-bold text-dark mb-0">Registrar Compra</div>
+                            <small class="text-muted">Ingreso de mercadería</small>
+                        </div>
+                    </a>
                 </div>
-            </div>
 
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card border-0 p-3 shadow-sm bg-white rounded-3">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="d-flex align-items-center justify-content-center bg-warning bg-opacity-25 rounded-3 me-2" style="width: 40px; height: 40px;">
-                            <i class="bi bi-cart text-warning fs-5"></i>
+                <div class="col-12 col-sm-6 col-md-4 col-xl-2">
+                    <a th:href="@{/inventario}" class="btn btn-light border text-start w-100 p-3 rounded-3 shadow-sm h-100 d-flex flex-column justify-content-between quick-access-card border-warning-subtle">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="badge bg-warning bg-opacity-10 text-warning p-2 rounded-3">
+                                <i class="bi bi-box-seam-fill fs-4"></i>
+                            </span>
+                            <i class="bi bi-arrow-right-short text-muted fs-4"></i>
                         </div>
-                        <span class="fw-bold text-secondary">Compras</span>
-                    </div>
-                    <h3 class="fw-bold mb-0">8920</h3>
+                        <div>
+                            <div class="fw-bold text-dark mb-0">Inventario</div>
+                            <small class="text-muted">Gestión de productos</small>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="col-12 col-sm-6 col-md-4 col-xl-2">
+                    <a th:href="@{/alertas}" class="btn btn-light border text-start w-100 p-3 rounded-3 shadow-sm h-100 d-flex flex-column justify-content-between quick-access-card border-danger-subtle">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="badge bg-danger bg-opacity-10 text-danger p-2 rounded-3">
+                                <i class="bi bi-bell-fill fs-4"></i>
+                            </span>
+                            <i class="bi bi-arrow-right-short text-muted fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark mb-0">Ver Alertas</div>
+                            <small class="text-muted">Stock y Vencimientos</small>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="col-12 col-sm-6 col-md-4 col-xl-2">
+                    <a th:href="@{/reporte}" class="btn btn-light border text-start w-100 p-3 rounded-3 shadow-sm h-100 d-flex flex-column justify-content-between quick-access-card border-success-subtle">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="badge bg-success bg-opacity-10 text-success p-2 rounded-3">
+                                <i class="bi bi-bar-chart-line-fill fs-4"></i>
+                            </span>
+                            <i class="bi bi-arrow-right-short text-muted fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark mb-0">Reportes</div>
+                            <small class="text-muted">Estadísticas e Informes</small>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="col-12 col-sm-6 col-xl-2">
+                    <a th:href="@{/usuarios}" class="btn btn-light border text-start w-100 p-3 rounded-3 shadow-sm h-100 d-flex flex-column justify-content-between quick-access-card border-secondary-subtle">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary p-2 rounded-3">
+                                <i class="bi bi-people-fill fs-4"></i>
+                            </span>
+                            <i class="bi bi-arrow-right-short text-muted fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark mb-0">Usuarios</div>
+                            <small class="text-muted">Gestión de personal</small>
+                        </div>
+                    </a>
                 </div>
             </div>
         </div>
 
+        <!-- Tarjetas de Resumen -->
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card border-0 p-3 shadow-sm bg-white rounded-3 h-100">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="d-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success rounded-3 me-2" style="width: 42px; height: 42px;">
+                            <i class="bi bi-cash-stack fs-4"></i>
+                        </div>
+                        <span class="fw-semibold text-secondary">Ventas de Hoy</span>
+                    </div>
+                    <h3 class="fw-bold mb-0 text-dark" th:text="${'S/ ' + #numbers.formatDecimal(ventasHoy, 1, 'COMMA', 2, 'POINT')}">S/ 0.00</h3>
+                    <small class="text-muted mt-1">Caja en curso</small>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card border-0 p-3 shadow-sm bg-white rounded-3 h-100">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-3 me-2" style="width: 42px; height: 42px;">
+                            <i class="bi bi-capsule fs-4"></i>
+                        </div>
+                        <span class="fw-semibold text-secondary">Productos</span>
+                    </div>
+                    <h3 class="fw-bold mb-0 text-dark" th:text="${totalProductos}">0</h3>
+                    <small class="text-muted mt-1">Catálogo activo</small>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card border-0 p-3 shadow-sm bg-white rounded-3 h-100">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="d-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-3 me-2" style="width: 42px; height: 42px;">
+                            <i class="bi bi-exclamation-octagon-fill fs-4"></i>
+                        </div>
+                        <span class="fw-semibold text-secondary">Stock Crítico</span>
+                    </div>
+                    <h3 class="fw-bold mb-0 text-danger" th:text="${totalStockCritico}">0</h3>
+                    <small class="text-muted mt-1">Requieren reabastecimiento</small>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card border-0 p-3 shadow-sm bg-white rounded-3 h-100">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="d-flex align-items-center justify-content-center bg-warning bg-opacity-10 text-warning rounded-3 me-2" style="width: 42px; height: 42px;">
+                            <i class="bi bi-truck fs-4"></i>
+                        </div>
+                        <span class="fw-semibold text-secondary">Compras del Mes</span>
+                    </div>
+                    <h3 class="fw-bold mb-0 text-dark" th:text="${'S/ ' + #numbers.formatDecimal(comprasMes, 1, 'COMMA', 2, 'POINT')}">S/ 0.00</h3>
+                    <small class="text-muted mt-1">Inversión en almacén</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fila Principal: Ventas Semanales y Stock Crítico -->
         <div class="row g-3 mb-4">
             <div class="col-12 col-lg-7">
                 <div class="card border-0 p-3 shadow-sm bg-white h-100 rounded-3">
                     <div class="d-flex align-items-center mb-3">
-                        <div class="d-flex align-items-center justify-content-center bg-info bg-opacity-25 rounded-3 me-2" style="width: 40px; height: 40px;">
-                            <i class="bi bi-graph-up text-info fs-5"></i>
+                        <div class="d-flex align-items-center justify-content-center bg-info bg-opacity-10 text-info rounded-3 me-2" style="width: 38px; height: 38px;">
+                            <i class="bi bi-graph-up-arrow fs-5"></i>
                         </div>
-                        <h6 class="fw-bold mb-0">Ventas última semana</h6>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark">Ventas de la Semana</h6>
+                            <small class="text-muted">Rendimiento de los últimos 7 días</small>
+                        </div>
                     </div>
-                    <div class="h-100 min-vh-25">
-                        <canvas id="salesChart"></canvas>
+                    <div style="position: relative; height: 260px; width: 100%;">
+                        <canvas id="weeklySalesChart"></canvas>
                     </div>
                 </div>
             </div>
 
             <div class="col-12 col-lg-5">
                 <div class="card border-0 p-3 shadow-sm bg-white h-100 rounded-3">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="d-flex align-items-center justify-content-center bg-danger bg-opacity-25 rounded-3 me-2" style="width: 40px; height: 40px;">
-                            <i class="bi bi-shield-exclamation text-danger fs-5"></i>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="d-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-3 me-2" style="width: 38px; height: 38px;">
+                                <i class="bi bi-shield-exclamation fs-5"></i>
+                            </div>
+                            <h6 class="fw-bold mb-0 text-dark">Stock Crítico</h6>
                         </div>
-                        <h6 class="fw-bold mb-0">Productos con stock crítico</h6>
+                        <a th:href="@{/alertas}" class="btn btn-sm btn-link text-decoration-none text-danger fw-semibold p-0">Ver todo</a>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0 text-center">
-                            <thead>
-                            <tr class="text-secondary">
+                            <thead class="table-light">
+                            <tr class="text-secondary small">
                                 <th class="text-start">Producto</th>
                                 <th>Stock</th>
-                                <th>Mínimo</th>
+                                <th>Mín.</th>
                             </tr>
                             </thead>
                             <tbody>
-                            <tr>
-                                <td class="text-start fw-bold">Paracetamol</td>
-                                <td class="text-danger fw-bold">8</td>
-                                <td class="text-muted">30</td>
+                            <tr th:each="item : ${productosCriticos}">
+                                <td class="text-start fw-semibold text-dark" th:text="${item.producto.nombre}">Producto</td>
+                                <td class="text-danger fw-bold" th:text="${item.stockTotal}">0</td>
+                                <td class="text-muted" th:text="${item.producto.stockMinimo}">0</td>
                             </tr>
-                            <tr>
-                                <td class="text-start fw-bold">Ibuprofeno</td>
-                                <td class="text-danger fw-bold">3</td>
-                                <td class="text-muted">30</td>
-                            </tr>
-                            <tr>
-                                <td class="text-start fw-bold">Cetirizina</td>
-                                <td class="text-danger fw-bold">5</td>
-                                <td class="text-muted">15</td>
-                            </tr>
-                            <tr>
-                                <td class="text-start fw-bold">Diclofenaco</td>
-                                <td class="text-danger fw-bold">6</td>
-                                <td class="text-muted">20</td>
-                            </tr>
-                            <tr>
-                                <td class="text-start fw-bold">Fluconazol</td>
-                                <td class="text-danger fw-bold">11</td>
-                                <td class="text-muted">10</td>
-                            </tr>
-                            <tr>
-                                <td class="text-start fw-bold">Dolocordalan</td>
-                                <td class="text-danger fw-bold">22</td>
-                                <td class="text-muted">15</td>
+                            <tr th:if="${#lists.isEmpty(productosCriticos)}">
+                                <td colspan="3" class="text-muted text-center py-4">
+                                    <i class="bi bi-check-circle-fill text-success fs-4 d-block mb-1"></i>
+                                    ¡Stock saludable! No hay alertas.
+                                </td>
                             </tr>
                             </tbody>
                         </table>
@@ -129,45 +224,65 @@
             </div>
         </div>
 
-        <div class="card border-0 p-3 shadow-sm bg-white rounded-3">
-            <div class="d-flex align-items-center mb-3">
-                <div class="d-flex align-items-center justify-content-center bg-primary bg-opacity-25 rounded-3 me-2" style="width: 40px; height: 40px;">
-                    <i class="bi bi-lightning text-primary fs-5"></i>
+        <!-- Fila Secundaria: Ventas de Hoy y Ventas del Mes -->
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-lg-6">
+                <div class="card border-0 p-3 shadow-sm bg-white h-100 rounded-3">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="d-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success rounded-3 me-2" style="width: 38px; height: 38px;">
+                            <i class="bi bi-clock-history fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark">Ventas del Día (Por Horas)</h6>
+                            <small class="text-muted">Comportamiento de caja hoy</small>
+                        </div>
+                    </div>
+                    <div style="position: relative; height: 220px; width: 100%;">
+                        <canvas id="dailySalesChart"></canvas>
+                    </div>
                 </div>
-                <h6 class="fw-bold mb-0">Accesos rápidos</h6>
             </div>
-            <div class="row g-3">
-                <div class="col-6 col-md-3">
-                    <a th:href="@{/}" class="btn btn-light border-0 text-start w-100 p-3 bg-info bg-opacity-10 rounded-3">
-                        <div class="fw-bold text-dark">Venta nueva</div>
-                        <small class="text-muted">Ir</small>
-                    </a>
-                </div>
-                <div class="col-6 col-md-3">
-                    <a th:href="@{/}" class="btn btn-light border-0 text-start w-100 p-3 bg-primary bg-opacity-10 rounded-3">
-                        <div class="fw-bold text-dark">Registrar compra</div>
-                        <small class="text-muted">Nueva orden</small>
-                    </a>
-                </div>
-                <div class="col-6 col-md-3">
-                    <a th:href="@{/}" class="btn btn-light border-0 text-start w-100 p-3 bg-warning bg-opacity-10 rounded-3">
-                        <div class="fw-bold text-dark">Nuevo producto</div>
-                        <small class="text-muted">Agregar</small>
-                    </a>
-                </div>
-                <div class="col-6 col-md-3">
-                    <a th:href="@{/}" class="btn btn-light border-0 text-start w-100 p-3 bg-success bg-opacity-10 rounded-3">
-                        <div class="fw-bold text-dark">Generar Reporte</div>
-                        <small class="text-muted">Ver</small>
-                    </a>
+
+            <div class="col-12 col-lg-6">
+                <div class="card border-0 p-3 shadow-sm bg-white h-100 rounded-3">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-3 me-2" style="width: 38px; height: 38px;">
+                            <i class="bi bi-calendar-month fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0 text-dark">Ventas del Mes (Últimos 30 días)</h6>
+                            <small class="text-muted">Tendencia de ingresos mensuales</small>
+                        </div>
+                    </div>
+                    <div style="position: relative; height: 220px; width: 100%;">
+                        <canvas id="monthlySalesChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
-
     </main>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script th:src="@{/js/dashboard.js}"></script>
+
+<style>
+    .quick-access-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .quick-access-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+
+<script th:inline="javascript">
+    window.DASHBOARD_DATA = {
+        semana: { labels: /*[[${graficoSemanaLabels}]]*/ [], data: /*[[${graficoSemanaData}]]*/ [] },
+        hoy:    { labels: /*[[${graficoHoyLabels}]]*/ [],    data: /*[[${graficoHoyData}]]*/ [] },
+        mes:    { labels: /*[[${graficoMesLabels}]]*/ [],    data: /*[[${graficoMesData}]]*/ [] }
+    };
+</script>
+<script th:src="@{/js/dashboard.js(v=${#dates.createNow().time})}"></script>
 </body>
 </html>
