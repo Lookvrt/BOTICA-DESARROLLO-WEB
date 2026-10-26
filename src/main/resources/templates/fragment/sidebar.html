@@ -1,14 +1,16 @@
-<div th:fragment="sidebar(activeTab)" class="d-flex flex-column flex-shrink-0 p-3 text-white bg-primary min-vh-100 sidebar-width" style="width: 260px;">
+<div th:fragment="sidebar(activeTab)"
+     class="d-flex flex-column flex-shrink-0 p-3 text-white bg-primary position-fixed top-0 start-0 vh-100 sidebar-width"
+     style="width: 260px; z-index: 1000;">
 
-    <a href="/" class="d-flex align-items-center mb-3 text-white text-decoration-none justify-content-center w-100">
+    <a href="/" class="d-flex align-items-center mb-3 text-white text-decoration-none justify-content-center w-100 flex-shrink-0">
         <div class="bg-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
             <img th:src="@{/images/icon.png}" alt="Logo" class="img-fluid" style="max-height: 100%; object-fit: contain;">
         </div>
     </a>
 
-    <hr class="my-3">
+    <hr class="my-3 flex-shrink-0">
 
-    <ul class="nav nav-pills flex-column mb-auto">
+    <ul class="nav nav-pills flex-column mb-auto overflow-y-auto">
         <li class="nav-item mb-1">
             <a th:href="@{/dashboard}"
                class="nav-link"
@@ -67,7 +69,9 @@
         </li>
     </ul>
 
-    <div class="d-flex align-items-center justify-content-between px-2">
+    <hr class="my-3 flex-shrink-0">
+
+    <div class="d-flex align-items-center justify-content-between px-2 pt-2 flex-shrink-0">
         <div class="d-flex align-items-center gap-2 overflow-hidden me-2">
             <i class="bi bi-person-circle fs-4 flex-shrink-0"></i>
             <span class="fw-bold fs-6 text-truncate" th:text="${session.usuario_autenticado_nombre != null ? session.usuario_autenticado_nombre : 'Usuario'}">Usuario</span>
@@ -81,4 +85,3 @@
         </form>
     </div>
 </div>
-
