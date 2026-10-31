@@ -22,7 +22,7 @@ public interface VentaRepository extends JpaRepository<VentaEntity, Integer> {
 
     long countByEstado(EstadoVenta estado);
 
-    List<VentaEntity> findTop10ByEstadoOrderByFechaVentaDesc(EstadoVenta estado);
+    List<VentaEntity> findTop7ByEstadoOrderByFechaVentaDesc(EstadoVenta estado);
 
     @Query(value = "SELECT p.nombre FROM detalle_ventas dv " +
             "JOIN productos p ON dv.id_producto = p.id_producto " +

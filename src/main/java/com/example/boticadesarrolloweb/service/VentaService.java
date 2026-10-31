@@ -38,7 +38,7 @@ public class VentaService {
 
     @Transactional(readOnly = true)
     public List<VentaEntity> obtenerUltimasVentas() {
-        return ventaRepository.findTop10ByEstadoOrderByFechaVentaDesc(EstadoVenta.REGISTRADA);
+        return ventaRepository.findTop7ByEstadoOrderByFechaVentaDesc(EstadoVenta.REGISTRADA);
     }
 
     @Transactional(readOnly = true)
