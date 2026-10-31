@@ -30,7 +30,12 @@ public class CompraService {
 
     @Transactional(readOnly = true)
     public List<CompraEntity> listarCompras() {
-        return compraRepository.findAll();
+        return listarCompras(null, "asc");
+    }
+
+    @Transactional(readOnly = true)
+    public List<CompraEntity> listarCompras(String query, String orden) {
+        return compraRepository.buscarYOrdenarPorProveedor(query, orden, EstadoCompra.REGISTRADA);
     }
 
     @Transactional(readOnly = true)

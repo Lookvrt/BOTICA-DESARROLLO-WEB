@@ -47,4 +47,18 @@ document.addEventListener('DOMContentLoaded', function () {
             bootstrap.Modal.getOrCreateInstance(modalEliminar).show();
         });
     });
+
+    // Listener para el botón de ordenamiento A-Z / Z-A
+    const btnToggleOrden = document.getElementById("btnToggleOrden");
+    if (btnToggleOrden) {
+        btnToggleOrden.addEventListener("click", function () {
+            const ordenInput = document.getElementById("ordenInput");
+            const form = document.getElementById("formBuscarCompras");
+
+            if (ordenInput && form) {
+                ordenInput.value = (ordenInput.value === "asc") ? "desc" : "asc";
+                form.submit();
+            }
+        });
+    }
 });

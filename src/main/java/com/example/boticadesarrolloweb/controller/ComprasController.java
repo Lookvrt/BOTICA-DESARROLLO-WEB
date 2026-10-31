@@ -6,12 +6,13 @@ import com.example.boticadesarrolloweb.service.CompraService;
 import com.example.boticadesarrolloweb.service.ProveedorService;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
@@ -27,19 +28,26 @@ public class ComprasController {
         this.proveedorService = proveedorService;
     }
 
-    private void cargarListas(Model model) {
-        model.addAttribute("compras", compraService.listarCompras());
+    private void cargarListas(Model model, String query, String orden) {
+        model.addAttribute("compras", compraService.listarCompras(query, orden));
         model.addAttribute("proveedores", proveedorService.listarProveedores());
         model.addAttribute("usuarios", compraService.listarUsuarios());
     }
 
     @GetMapping("/compras")
-    public String compras(Model model) {
+    public String compras(
+            @RequestParam(name = "q", required = false) String query,
+            @RequestParam(name = "orden", required = false, defaultValue = "asc") String orden,
+            Model model) {
+
         if (!model.containsAttribute("compra")) {
             model.addAttribute("compra", new Compra());
         }
 
-        cargarListas(model);
+        cargarListas(model, query, orden);
+        model.addAttribute("query", query);
+        model.addAttribute("orden", orden);
+
         return "compras";
     }
 
@@ -48,7 +56,7 @@ public class ComprasController {
             @Valid @ModelAttribute("compra") Compra compra, BindingResult resultado, Model model, RedirectAttributes redirectAttributes) {
 
         if (resultado.hasErrors()) {
-            cargarListas(model);
+            cargarListas(model, null, "asc");
             model.addAttribute("modalAbrir", compra.getIdCompra() == null ? "nuevo" : "editar");
             model.addAttribute("error", "Revisa los datos ingresados en el formulario.");
 
@@ -89,7 +97,7 @@ public class ComprasController {
 
             model.addAttribute("compra", compra);
             model.addAttribute("modalAbrir", "editar");
-            cargarListas(model);
+            cargarListas(model, null, "asc");
 
             return "compras";
         } catch (Exception e) {
