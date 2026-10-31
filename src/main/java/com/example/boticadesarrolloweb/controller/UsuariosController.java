@@ -30,12 +30,14 @@ public class UsuariosController {
     // ─────────────────────────────────────────────────────────────
     @GetMapping
     public String usuarios(@RequestParam(name = "q", required = false) String query,
+                           @RequestParam(name = "orden", required = false, defaultValue = "asc") String orden,
                            Model model) {
-        List<UsuarioEntity> lista = usuarioService.listar(query);
+        List<UsuarioEntity> lista = usuarioService.listar(query, orden);
 
         model.addAttribute("usuarios", lista);
         model.addAttribute("totalUsuarios", lista.size());
-        model.addAttribute("query", query != null ? query : "");
+        model.addAttribute("query", query);
+        model.addAttribute("orden", orden);
         model.addAttribute("roles", Rol.values());
 
         return "usuarios";
@@ -51,21 +53,18 @@ public class UsuariosController {
             boolean esNuevo = (usuario.getIdUsuario() == null || usuario.getIdUsuario() == 0);
 
             if (esNuevo) {
-                // Validar unicidad de usuario
                 if (usuarioService.existeUsuario(usuario.getUsuario().trim())) {
                     redirectAttributes.addFlashAttribute("mensajeError",
                             "El nombre de usuario '" + usuario.getUsuario() + "' ya está registrado.");
                     return "redirect:/usuarios";
                 }
 
-                // Validar unicidad de correo
                 if (usuarioService.existeEmail(usuario.getEmail().trim())) {
                     redirectAttributes.addFlashAttribute("mensajeError",
                             "El correo electrónico '" + usuario.getEmail() + "' ya está registrado.");
                     return "redirect:/usuarios";
                 }
 
-                // Validar contraseña obligatoria al crear
                 if (usuario.getClave() == null || usuario.getClave().isBlank()) {
                     redirectAttributes.addFlashAttribute("mensajeError",
                             "Debe ingresar una contraseña para el nuevo usuario.");
@@ -76,7 +75,6 @@ public class UsuariosController {
                 redirectAttributes.addFlashAttribute("mensajeExito",
                         "Usuario '" + usuario.getUsuario() + "' registrado exitosamente.");
             } else {
-                // Validar si el nuevo username o email colisiona con otro usuario
                 UsuarioEntity actual = usuarioService.buscarPorId(usuario.getIdUsuario()).orElse(null);
                 if (actual != null) {
                     if (!actual.getUsuario().equalsIgnoreCase(usuario.getUsuario().trim())

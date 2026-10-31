@@ -35,7 +35,8 @@ public class CompraService {
 
     @Transactional(readOnly = true)
     public List<CompraEntity> listarCompras(String query, String orden) {
-        return compraRepository.buscarYOrdenarPorProveedor(query, orden, EstadoCompra.REGISTRADA);
+        String queryLimpia = (query != null) ? query.trim() : null;
+        return compraRepository.buscarYOrdenarPorProveedor(queryLimpia, orden, EstadoCompra.REGISTRADA);
     }
 
     @Transactional(readOnly = true)

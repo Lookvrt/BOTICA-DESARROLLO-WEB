@@ -2,7 +2,9 @@ package com.example.boticadesarrolloweb.repository;
 
 import com.example.boticadesarrolloweb.entity.UsuarioEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
-
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import java.util.List;
 import java.util.Optional;
 
 public interface UsuarioRepository extends JpaRepository<UsuarioEntity, Integer> {
@@ -15,10 +17,14 @@ public interface UsuarioRepository extends JpaRepository<UsuarioEntity, Integer>
 
     boolean existsByEmail(String email);
 
-    @org.springframework.data.jpa.repository.Query("SELECT u FROM UsuarioEntity u WHERE " +
-           "LOWER(u.nombres) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-           "LOWER(u.apellidos) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-           "LOWER(u.usuario) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-           "LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))")
-    java.util.List<UsuarioEntity> buscar(@org.springframework.data.repository.query.Param("query") String query);
+    @Query("SELECT u FROM UsuarioEntity u WHERE " +
+            "(:query IS NULL OR :query = '' OR " +
+            "LOWER(REPLACE(u.nombres, ' ', '')) LIKE LOWER(CONCAT('%', REPLACE(:query, ' ', ''), '%')) OR " +
+            "LOWER(REPLACE(u.apellidos, ' ', '')) LIKE LOWER(CONCAT('%', REPLACE(:query, ' ', ''), '%')) OR " +
+            "LOWER(REPLACE(CONCAT(u.nombres, ' ', u.apellidos), ' ', '')) LIKE LOWER(CONCAT('%', REPLACE(:query, ' ', ''), '%'))) " +
+            "ORDER BY " +
+            "CASE WHEN :orden = 'desc' THEN u.nombres END DESC, " +
+            "CASE WHEN :orden = 'asc' OR :orden IS NULL OR :orden = '' THEN u.nombres END ASC")
+    List<UsuarioEntity> buscarYOrdenarPorNombre(@Param("query") String query,
+                                                @Param("orden") String orden);
 }

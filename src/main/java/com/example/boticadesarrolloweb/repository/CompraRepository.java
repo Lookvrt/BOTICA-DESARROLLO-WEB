@@ -18,7 +18,8 @@ public interface CompraRepository extends JpaRepository<CompraEntity, Integer> {
                                         @Param("fin") LocalDateTime fin);
 
     @Query("SELECT c FROM CompraEntity c WHERE c.estado = :estado " +
-            "AND (:query IS NULL OR :query = '' OR LOWER(c.proveedor.razonSocial) LIKE LOWER(CONCAT('%', :query, '%'))) " +
+            "AND (:query IS NULL OR :query = '' OR " +
+            "LOWER(REPLACE(c.proveedor.razonSocial, ' ', '')) LIKE LOWER(CONCAT('%', REPLACE(:query, ' ', ''), '%'))) " +
             "ORDER BY " +
             "CASE WHEN :orden = 'desc' THEN c.proveedor.razonSocial END DESC, " +
             "CASE WHEN :orden = 'asc' OR :orden IS NULL OR :orden = '' THEN c.proveedor.razonSocial END ASC")

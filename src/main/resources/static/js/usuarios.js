@@ -27,4 +27,16 @@ document.addEventListener('DOMContentLoaded', () => {
             modalEliminar.show();
         });
     });
+
+    const btnToggleOrden = document.getElementById("btnToggleOrden");
+    if (btnToggleOrden) {
+        btnToggleOrden.addEventListener("click", function () {
+            const ordenInput = document.getElementById("ordenInput");
+            const form = document.getElementById("formBuscarUsuarios");
+            if (ordenInput && form) {
+                ordenInput.value = (ordenInput.value === "asc") ? "desc" : "asc";
+                form.submit();
+            }
+        });
+    }
 });

@@ -10,7 +10,8 @@ import java.util.List;
 public interface ProveedorRepository extends JpaRepository<ProveedorEntity, Integer> {
 
     @Query("SELECT p FROM ProveedorEntity p WHERE " +
-            "(:query IS NULL OR :query = '' OR LOWER(p.razonSocial) LIKE LOWER(CONCAT('%', :query, '%'))) " +
+            "(:query IS NULL OR :query = '' OR " +
+            "LOWER(REPLACE(p.razonSocial, ' ', '')) LIKE LOWER(CONCAT('%', REPLACE(:query, ' ', ''), '%'))) " +
             "ORDER BY " +
             "CASE WHEN :orden = 'desc' THEN p.razonSocial END DESC, " +
             "CASE WHEN :orden = 'asc' OR :orden IS NULL OR :orden = '' THEN p.razonSocial END ASC")

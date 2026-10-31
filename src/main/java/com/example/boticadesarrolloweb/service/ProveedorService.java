@@ -23,7 +23,8 @@ public class ProveedorService {
 
     @Transactional(readOnly = true)
     public List<ProveedorEntity> listarProveedores(String query, String orden) {
-        return proveedorRepository.buscarYOrdenarPorRazonSocial(query, orden);
+        String queryLimpia = (query != null) ? query.trim() : null;
+        return proveedorRepository.buscarYOrdenarPorRazonSocial(queryLimpia, orden);
     }
 
     @Transactional

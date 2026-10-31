@@ -20,12 +20,14 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
 
-    /** Retorna todos los usuarios activos o filtrados por búsqueda */
+    /** Retorna todos los usuarios activos o filtrados por nombre y ordenados */
+    public List<UsuarioEntity> listar(String query, String orden) {
+        String queryLimpia = (query != null) ? query.trim() : null;
+        return usuarioRepository.buscarYOrdenarPorNombre(queryLimpia, orden);
+    }
+
     public List<UsuarioEntity> listar(String query) {
-        if (query == null || query.isBlank()) {
-            return usuarioRepository.findAll();
-        }
-        return usuarioRepository.buscar(query.trim());
+        return listar(query, "asc");
     }
 
     /** Retorna todos los usuarios activos */
