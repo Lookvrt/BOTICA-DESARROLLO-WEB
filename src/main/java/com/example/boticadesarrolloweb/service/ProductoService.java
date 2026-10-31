@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -26,18 +25,8 @@ public class ProductoService {
     private final LoteRepository loteRepository;
 
     public List<ProductoEntity> listar(String query, Integer idCategoria) {
-        if (idCategoria != null && idCategoria > 0) {
-            if (query != null && !query.isBlank()) {
-                return productoRepository.buscarPorCategoriaYTexto(idCategoria, query.trim());
-            }
-            return productoRepository.findByCategoriaId(idCategoria);
-        }
-
-        if (query != null && !query.isBlank()) {
-            return productoRepository.buscar(query.trim());
-        }
-
-        return productoRepository.findAllConCategoria();
+        String queryLimpio = (query != null) ? query.trim() : "";
+        return productoRepository.buscarPorNombreYCategoria(queryLimpio, idCategoria);
     }
 
     public List<InventarioItemDto> listarInventario(String query, Integer idCategoria, String filtroStock) {
@@ -48,7 +37,7 @@ public class ProductoService {
             return InventarioItemDto.from(p, lotes);
         }).collect(Collectors.toList());
 
-        // Filtrar por estado de stock si se seleccionó
+        // Filtrar por estado de stock (NORMAL, CRITICO, AGOTADO)
         if (filtroStock != null && !filtroStock.isBlank() && !filtroStock.equalsIgnoreCase("TODOS")) {
             items = items.stream()
                     .filter(i -> i.getEstadoStock().equalsIgnoreCase(filtroStock.trim()))
@@ -89,7 +78,6 @@ public class ProductoService {
 
         ProductoEntity guardado = productoRepository.save(producto);
 
-        // Si se especificó un lote o stock inicial, crearlo de inmediato
         if (stockInicial != null && stockInicial > 0) {
             String nroLote = (numeroLote != null && !numeroLote.isBlank())
                     ? numeroLote.trim().toUpperCase()

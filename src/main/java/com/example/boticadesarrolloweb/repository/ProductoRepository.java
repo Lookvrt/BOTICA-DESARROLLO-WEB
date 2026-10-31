@@ -15,20 +15,11 @@ public interface ProductoRepository extends JpaRepository<ProductoEntity, Intege
     boolean existsByCodigo(String codigo);
 
     @Query("SELECT p FROM ProductoEntity p LEFT JOIN FETCH p.categoria WHERE " +
-           "(LOWER(p.codigo) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-           "LOWER(p.nombre) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-           "LOWER(p.principioActivo) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-           "LOWER(p.concentracion) LIKE LOWER(CONCAT('%', :query, '%')))")
-    List<ProductoEntity> buscar(@Param("query") String query);
-
-    @Query("SELECT p FROM ProductoEntity p LEFT JOIN FETCH p.categoria WHERE p.categoria.idCategoria = :idCategoria")
-    List<ProductoEntity> findByCategoriaId(@Param("idCategoria") Integer idCategoria);
-
-    @Query("SELECT p FROM ProductoEntity p LEFT JOIN FETCH p.categoria WHERE p.categoria.idCategoria = :idCategoria AND " +
-           "(LOWER(p.codigo) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-           "LOWER(p.nombre) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-           "LOWER(p.principioActivo) LIKE LOWER(CONCAT('%', :query, '%')))")
-    List<ProductoEntity> buscarPorCategoriaYTexto(@Param("idCategoria") Integer idCategoria, @Param("query") String query);
+            "(:idCategoria IS NULL OR :idCategoria = 0 OR p.categoria.idCategoria = :idCategoria) AND " +
+            "(:query IS NULL OR :query = '' OR LOWER(REPLACE(p.nombre, ' ', '')) LIKE LOWER(CONCAT('%', REPLACE(:query, ' ', ''), '%'))) " +
+            "ORDER BY p.idProducto DESC")
+    List<ProductoEntity> buscarPorNombreYCategoria(@Param("query") String query,
+                                                   @Param("idCategoria") Integer idCategoria);
 
     @Query("SELECT p FROM ProductoEntity p LEFT JOIN FETCH p.categoria ORDER BY p.idProducto DESC")
     List<ProductoEntity> findAllConCategoria();
