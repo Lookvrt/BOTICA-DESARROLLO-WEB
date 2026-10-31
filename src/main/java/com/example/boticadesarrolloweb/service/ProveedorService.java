@@ -18,7 +18,12 @@ public class ProveedorService {
 
     @Transactional(readOnly = true)
     public List<ProveedorEntity> listarProveedores() {
-        return proveedorRepository.findAll();
+        return listarProveedores(null, "asc");
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProveedorEntity> listarProveedores(String query, String orden) {
+        return proveedorRepository.buscarYOrdenarPorRazonSocial(query, orden);
     }
 
     @Transactional

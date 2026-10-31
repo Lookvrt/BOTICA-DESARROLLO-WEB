@@ -10,6 +10,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import jakarta.validation.Valid;
 
@@ -23,10 +24,14 @@ public class ProveedoresController {
     }
 
     @GetMapping("/proveedores")
-    public String proveedores(Model model) {
+    public String proveedores(
+            @RequestParam(name = "q", required = false) String query,
+            @RequestParam(name = "orden", required = false, defaultValue = "asc") String orden,
+            Model model) {
         model.addAttribute("proveedor", new Proveedor());
-        model.addAttribute("proveedores",
-                proveedorService.listarProveedores());
+        model.addAttribute("proveedores", proveedorService.listarProveedores(query, orden));
+        model.addAttribute("query", query);
+        model.addAttribute("orden", orden);
         return "proveedores";
     }
 
@@ -38,8 +43,7 @@ public class ProveedoresController {
             RedirectAttributes redirectAttributes) {
 
         if (resultado.hasErrors()) {
-            model.addAttribute("proveedores",
-                    proveedorService.listarProveedores());
+            model.addAttribute("proveedores", proveedorService.listarProveedores(null, "asc"));
             model.addAttribute("modalAbrir", proveedor.getIdProveedor() == null ? "nuevo" : "editar");
             return "proveedores";
         }
@@ -75,7 +79,7 @@ public class ProveedoresController {
 
         model.addAttribute("proveedor", proveedor);
         model.addAttribute("modalAbrir", "editar");
-        model.addAttribute("proveedores", proveedorService.listarProveedores());
+        model.addAttribute("proveedores", proveedorService.listarProveedores(null, "asc"));
 
         return "proveedores";
     }
