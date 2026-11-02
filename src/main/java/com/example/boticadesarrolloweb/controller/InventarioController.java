@@ -72,7 +72,7 @@ public class InventarioController {
     // ─────────────────────────────────────────────────────────────
     @PostMapping("/guardar")
     public String guardar(@RequestParam(required = false) Integer idProducto,
-                          @RequestParam String codigo,
+                          @RequestParam(required = false) String codigo,
                           @RequestParam String nombre,
                           @RequestParam(required = false) String descripcion,
                           @RequestParam(required = false) String principioActivo,
@@ -95,15 +95,12 @@ public class InventarioController {
             boolean esNuevo = (idProducto == null || idProducto == 0);
 
             if (esNuevo) {
-                // Validar código único
-                if (productoService.existeCodigo(codigo.trim())) {
-                    redirectAttributes.addFlashAttribute("mensajeError",
-                            "El código '" + codigo.trim() + "' ya está registrado en otro producto.");
-                    return "redirect:/inventario";
-                }
+                String codigoFinal = (codigo != null && !codigo.isBlank())
+                        ? codigo.trim().toUpperCase()
+                        : productoService.generarSiguienteCodigo();
 
                 ProductoEntity nuevo = ProductoEntity.builder()
-                        .codigo(codigo.trim().toUpperCase())
+                        .codigo(codigoFinal)
                         .nombre(nombre.trim())
                         .descripcion(descripcion)
                         .principioActivo(principioActivo)
@@ -122,17 +119,13 @@ public class InventarioController {
                         "Producto '" + nuevo.getNombre() + "' registrado correctamente con código " + nuevo.getCodigo() + ".");
 
             } else {
-                // Validar si el código colisiona con otro producto
                 ProductoEntity actual = productoService.buscarPorId(idProducto)
                         .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado"));
 
-                if (!actual.getCodigo().equalsIgnoreCase(codigo.trim()) && productoService.existeCodigo(codigo.trim())) {
-                    redirectAttributes.addFlashAttribute("mensajeError",
-                            "El código '" + codigo.trim() + "' ya pertenece a otro producto.");
-                    return "redirect:/inventario";
+                if (codigo != null && !codigo.isBlank()) {
+                    actual.setCodigo(codigo.trim().toUpperCase());
                 }
 
-                actual.setCodigo(codigo.trim().toUpperCase());
                 actual.setNombre(nombre.trim());
                 actual.setDescripcion(descripcion);
                 actual.setPrincipioActivo(principioActivo);

@@ -45,7 +45,6 @@ function abrirModalEditar(idProducto) {
         .then(res => res.json())
         .then(p => {
             document.getElementById('editIdProducto').value = p.idProducto;
-            document.getElementById('editCodigo').value = p.codigo || '';
             document.getElementById('editNombre').value = p.nombre || '';
             document.getElementById('editPrincipio').value = p.principioActivo || '';
             document.getElementById('editConcentracion').value = p.concentracion || '';

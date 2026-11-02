@@ -108,7 +108,7 @@
                             <i class="bi bi-search"></i>
                         </span>
                         <input type="text" name="q" class="form-control border-start-0 ps-0 shadow-none"
-                               placeholder="Buscar por nombre..."
+                               placeholder="Buscar por medicamento..."
                                th:value="${query}">
                     </div>
                 </div>
@@ -309,19 +309,8 @@
 
                 <div class="modal-body p-4">
                     <div class="row g-3">
-                        <!-- Código y Botón Generar -->
-                        <div class="col-12 col-md-4">
-                            <label for="nuevoCodigo" class="form-label fw-semibold small text-secondary">Código del Producto <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <input type="text" class="form-control text-uppercase" id="nuevoCodigo" name="codigo" placeholder="Ej: MED009" required>
-                                <button class="btn btn-outline-secondary" type="button" onclick="generarCodigoSugerido()" title="Generar código automático">
-                                    <i class="bi bi-magic"></i>
-                                </button>
-                            </div>
-                        </div>
-
                         <!-- Nombre Comercial -->
-                        <div class="col-12 col-md-8">
+                        <div class="col-12">
                             <label for="nuevoNombre" class="form-label fw-semibold small text-secondary">Nombre Comercial <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="nuevoNombre" name="nombre" placeholder="Ej: Paracetamol 500mg x100" required>
                         </div>
@@ -431,12 +420,8 @@
 
                 <div class="modal-body p-4">
                     <div class="row g-3">
-                        <div class="col-12 col-md-4">
-                            <label for="editCodigo" class="form-label fw-semibold small text-secondary">Código <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control text-uppercase" id="editCodigo" name="codigo" required>
-                        </div>
-
-                        <div class="col-12 col-md-8">
+                        <!-- Nombre Comercial (Sin el campo de código) -->
+                        <div class="col-12">
                             <label for="editNombre" class="form-label fw-semibold small text-secondary">Nombre Comercial <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="editNombre" name="nombre" required>
                         </div>

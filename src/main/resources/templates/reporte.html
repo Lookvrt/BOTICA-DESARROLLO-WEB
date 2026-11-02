@@ -21,7 +21,7 @@
                         </div>
                         <span class="fw-semibold text-secondary">Total Ventas</span>
                     </div>
-                    <h4 class="mb-0 text-center fw-bold mt-2 text-dark" th:text="${'S/ ' + #numbers.formatDecimal(totalVentas, 1, 'COMMA', 2, 'POINT')}">S/ 0.00</h4>
+                    <h4 class="mb-0 text-center fw-bold mt-2 text-dark" th:text="${'S/ ' + #numbers.formatDecimal(totalVentas, 1, 'COMMA', 2, 'POINT')}" style="height: 30px">S/ 0.00</h4>
                 </div>
             </div>
             <div class="col-12 col-sm-6 col-xl-3">
@@ -32,7 +32,7 @@
                         </div>
                         <span class="fw-semibold text-secondary">N° de Ventas</span>
                     </div>
-                    <h4 class="mb-0 text-center fw-bold mt-2 text-dark" th:text="${nroVentas}">0</h4>
+                    <h4 class="mb-0 text-center fw-bold mt-2 text-dark" th:text="${nroVentas}" style="height: 30px">0</h4>
                 </div>
             </div>
             <div class="col-12 col-sm-6 col-xl-3">
@@ -43,7 +43,7 @@
                         </div>
                         <span class="fw-semibold text-secondary">Ticket Promedio</span>
                     </div>
-                    <h4 class="mb-0 text-center fw-bold mt-2 text-dark" th:text="${'S/ ' + #numbers.formatDecimal(promedioVenta, 1, 'COMMA', 2, 'POINT')}">S/ 0.00</h4>
+                    <h4 class="mb-0 text-center fw-bold mt-2 text-dark" th:text="${'S/ ' + #numbers.formatDecimal(promedioVenta, 1, 'COMMA', 2, 'POINT')}" style="height: 30px">S/ 0.00</h4>
                 </div>
             </div>
             <div class="col-12 col-sm-6 col-xl-3">
@@ -54,7 +54,7 @@
                         </div>
                         <span class="fw-semibold text-secondary">Top Producto</span>
                     </div>
-                    <h4 class="mb-0 text-center fw-bold mt-2 text-dark text-truncate" th:text="${topProducto}">Sin ventas</h4>
+                    <h4 class="mb-0 text-center fw-bold mt-2 text-dark text-truncate" th:text="${topProducto}" style="height: 30px">Sin ventas</h4>
                 </div>
             </div>
         </div>

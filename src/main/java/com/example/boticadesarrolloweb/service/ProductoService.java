@@ -24,6 +24,27 @@ public class ProductoService {
     private final ProductoRepository productoRepository;
     private final LoteRepository loteRepository;
 
+    @Transactional(readOnly = true)
+    public String generarSiguienteCodigo() {
+        List<ProductoEntity> productos = productoRepository.findAllConCategoria();
+        int maxNumero = 0;
+
+        for (ProductoEntity p : productos) {
+            if (p.getCodigo() != null && p.getCodigo().toUpperCase().startsWith("MED")) {
+                try {
+                    int num = Integer.parseInt(p.getCodigo().substring(3).trim());
+                    if (num > maxNumero) {
+                        maxNumero = num;
+                    }
+                } catch (NumberFormatException ignored) {
+                    // Si un código no tiene sufijo numérico válido, se ignora
+                }
+            }
+        }
+
+        return String.format("MED%03d", maxNumero + 1);
+    }
+
     public List<ProductoEntity> listar(String query, Integer idCategoria) {
         String queryLimpio = (query != null) ? query.trim() : "";
         return productoRepository.buscarPorNombreYCategoria(queryLimpio, idCategoria);
@@ -37,7 +58,6 @@ public class ProductoService {
             return InventarioItemDto.from(p, lotes);
         }).collect(Collectors.toList());
 
-        // Filtrar por estado de stock (NORMAL, CRITICO, AGOTADO)
         if (filtroStock != null && !filtroStock.isBlank() && !filtroStock.equalsIgnoreCase("TODOS")) {
             items = items.stream()
                     .filter(i -> i.getEstadoStock().equalsIgnoreCase(filtroStock.trim()))
@@ -65,7 +85,12 @@ public class ProductoService {
                                 LocalDate fechaVencimiento,
                                 Integer stockInicial) {
 
-        producto.setCodigo(producto.getCodigo().trim().toUpperCase());
+        if (producto.getCodigo() == null || producto.getCodigo().isBlank()) {
+            producto.setCodigo(generarSiguienteCodigo());
+        } else {
+            producto.setCodigo(producto.getCodigo().trim().toUpperCase());
+        }
+
         if (producto.getEstado() == null) {
             producto.setEstado(1);
         }
@@ -108,7 +133,6 @@ public class ProductoService {
     @Transactional
     public ProductoEntity actualizar(ProductoEntity producto) {
         return productoRepository.findById(producto.getIdProducto()).map(actual -> {
-            actual.setCodigo(producto.getCodigo().trim().toUpperCase());
             actual.setNombre(producto.getNombre().trim());
             actual.setDescripcion(producto.getDescripcion());
             actual.setPrincipioActivo(producto.getPrincipioActivo());
