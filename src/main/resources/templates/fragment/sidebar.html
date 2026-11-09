@@ -1,4 +1,5 @@
 <div th:fragment="sidebar(activeTab)"
+     xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
      class="d-flex flex-column flex-shrink-0 p-3 text-white bg-primary position-fixed top-0 start-0 vh-100 sidebar-width"
      style="width: 260px; z-index: 1000;">
 
@@ -11,56 +12,71 @@
     <hr class="my-3 flex-shrink-0">
 
     <ul class="nav nav-pills flex-column mb-auto overflow-y-auto">
-        <li class="nav-item mb-1">
+        <!-- Dashboard (Exclusivo para ADMINISTRADOR según matriz) -->
+        <li class="nav-item mb-1" sec:authorize="hasRole('ADMINISTRADOR')">
             <a th:href="@{/dashboard}"
                class="nav-link"
                th:classappend="${activeTab == 'dashboard'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
                 <i class="bi bi-speedometer2 me-2"></i> Dashboard
             </a>
         </li>
-        <li class="nav-item mb-1">
+
+        <!-- Punto de Venta (Administrador y Vendedor / Farmacéutico) -->
+        <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'VENDEDOR')">
             <a th:href="@{/venta}"
                class="nav-link"
                th:classappend="${activeTab == 'venta'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
                 <i class="bi bi-cart-check me-2"></i> Punto de Venta
             </a>
         </li>
-        <li class="nav-item mb-1">
+
+        <!-- Compras (Administrador y Almacenero) -->
+        <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'ALMACENERO')">
             <a th:href="@{/compras}"
                class="nav-link"
                th:classappend="${activeTab == 'compras'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
                 <i class="bi bi-bag me-2"></i> Compras
             </a>
         </li>
-        <li class="nav-item mb-1">
+
+        <!-- Inventario (Administrador y Almacenero) -->
+        <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'ALMACENERO')">
             <a th:href="@{/inventario}"
                class="nav-link"
                th:classappend="${activeTab == 'inventario'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
                 <i class="bi bi-box-seam me-2"></i> Inventario
             </a>
         </li>
-        <li class="nav-item mb-1">
+
+        <!-- Proveedores (Administrador y Almacenero) -->
+        <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'ALMACENERO')">
             <a th:href="@{/proveedores}"
                class="nav-link"
                th:classappend="${activeTab == 'proveedores'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
                 <i class="bi bi-truck me-2"></i> Proveedores
             </a>
         </li>
-        <li class="nav-item mb-1">
+
+        <!-- Usuarios (Solo Administrador) -->
+        <li class="nav-item mb-1" sec:authorize="hasRole('ADMINISTRADOR')">
             <a th:href="@{/usuarios}"
                class="nav-link"
                th:classappend="${activeTab == 'usuarios'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
                 <i class="bi bi-people me-2"></i> Usuarios
             </a>
         </li>
-        <li class="nav-item mb-1">
+
+        <!-- Reporte (Solo Administrador) -->
+        <li class="nav-item mb-1" sec:authorize="hasRole('ADMINISTRADOR')">
             <a th:href="@{/reporte}"
                class="nav-link"
                th:classappend="${activeTab == 'reporte'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
                 <i class="bi bi-file-earmark-bar-graph me-2"></i> Reporte
             </a>
         </li>
-        <li class="nav-item mb-1">
+
+        <!-- Alertas (Administrador y Almacenero) -->
+        <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'ALMACENERO')">
             <a th:href="@{/alertas}"
                class="nav-link"
                th:classappend="${activeTab == 'alertas'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
@@ -71,10 +87,20 @@
 
     <hr class="my-3 flex-shrink-0">
 
+    <!-- Usuario y Rol Autenticado -->
     <div class="d-flex align-items-center justify-content-between px-2 pt-2 flex-shrink-0">
         <div class="d-flex align-items-center gap-2 overflow-hidden me-2">
             <i class="bi bi-person-circle fs-4 flex-shrink-0"></i>
-            <span class="fw-bold fs-6 text-truncate" th:text="${session.usuario_autenticado_nombre != null ? session.usuario_autenticado_nombre : 'Usuario'}">Usuario</span>
+            <div class="d-flex flex-column overflow-hidden">
+                <span class="fw-bold fs-6 text-truncate mb-0"
+                      th:text="${session.usuario_autenticado_nombre != null ? session.usuario_autenticado_nombre : 'Usuario'}">Usuario</span>
+                <span class="badge bg-light text-primary text-truncate small"
+                      style="font-size: 0.7rem;"
+                      th:with="rolActual=${session.usuario_autenticado_rol != null ? session.usuario_autenticado_rol : #strings.replace(#authentication.getAuthorities()[0].getAuthority(), 'ROLE_', '')}"
+                      th:text="${rolActual == 'ADMINISTRADOR' ? 'ADMIN' : rolActual}">
+                        ROL
+                </span>
+            </div>
         </div>
         <form th:action="@{/logout}" method="post" class="m-0 p-0 flex-shrink-0">
             <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
