@@ -28,25 +28,21 @@ public class SecurityConfig {
                                 "/oauth2/**", "/login/oauth2/**", "/error",
                                 "/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
 
-                        // 2. Módulos exclusivos de ADMINISTRADOR (Dashboard, Usuarios y Reportes)
+                        // 2. Módulos EXCLUSIVOS de ADMINISTRADOR
                         .requestMatchers("/dashboard", "/api/dashboard/**").hasRole("ADMINISTRADOR")
                         .requestMatchers("/usuarios", "/usuarios/**").hasRole("ADMINISTRADOR")
                         .requestMatchers("/reporte", "/reporte/**", "/api/reportes/**").hasRole("ADMINISTRADOR")
 
-                        // 3. Módulos compartidos: ADMINISTRADOR y VENDEDOR (Farmacéutico)
+                        // 3. Módulos compartidos
                         .requestMatchers("/venta", "/venta/**").hasAnyRole("ADMINISTRADOR", "VENDEDOR")
-
-                        // 4. Módulos compartidos: ADMINISTRADOR y ALMACENERO
                         .requestMatchers("/inventario", "/inventario/**").hasAnyRole("ADMINISTRADOR", "ALMACENERO")
                         .requestMatchers("/compras", "/compras/**").hasAnyRole("ADMINISTRADOR", "ALMACENERO")
                         .requestMatchers("/proveedores", "/proveedores/**").hasAnyRole("ADMINISTRADOR", "ALMACENERO")
                         .requestMatchers("/alertas", "/alertas/**").hasAnyRole("ADMINISTRADOR", "ALMACENERO")
 
-                        // Cualquier otra petición requiere estar autenticado
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception
-                        // Redirigir a la pantalla de login con un parámetro de denegado (ruta pública)
                         .accessDeniedPage("/login?denied=true")
                 )
                 .formLogin(form -> form

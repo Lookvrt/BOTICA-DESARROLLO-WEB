@@ -13,6 +13,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.security.core.GrantedAuthority;
 
 /**
  * Controlador de Login y verificación OTP (doble autenticación opcional).
@@ -43,12 +47,29 @@ public class LoginController {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // [1] Mostrar página de Login
+    // [1] Petición a la raíz "/"
+    // ─────────────────────────────────────────────────────────────
+    @GetMapping("/")
+    public String raiz(Authentication authentication) {
+        if (estaAutenticado(authentication)) {
+            return redireccionarPorRol(authentication);
+        }
+        return "redirect:/login";
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // [2] Petición a "/login"
     // ─────────────────────────────────────────────────────────────
     @GetMapping("/login")
     public String login(@RequestParam(required = false) String error,
                         @RequestParam(required = false) String logout,
+                        Authentication authentication,
                         Model model) {
+
+        if (estaAutenticado(authentication)) {
+            return redireccionarPorRol(authentication);
+        }
+
         if (error != null) {
             if ("oauth2".equalsIgnoreCase(error)) {
                 model.addAttribute("errorMsg", "Su correo de Google no está registrado o autorizado en el sistema. Solicite al administrador que cree su cuenta.");
@@ -60,6 +81,28 @@ public class LoginController {
             model.addAttribute("logoutMsg", "Sesión cerrada correctamente.");
         }
         return "login";
+    }
+
+    private boolean estaAutenticado(Authentication authentication) {
+        return authentication != null
+                && authentication.isAuthenticated()
+                && !(authentication instanceof AnonymousAuthenticationToken);
+    }
+
+    private String redireccionarPorRol(Authentication authentication) {
+        if (authentication == null) return "redirect:/login";
+
+        for (GrantedAuthority authority : authentication.getAuthorities()) {
+            String role = authority.getAuthority();
+            if ("ROLE_ADMINISTRADOR".equals(role)) {
+                return "redirect:/dashboard";
+            } else if ("ROLE_ALMACENERO".equals(role)) {
+                return "redirect:/compras";
+            } else if ("ROLE_VENDEDOR".equals(role)) {
+                return "redirect:/venta";
+            }
+        }
+        return "redirect:/login";
     }
 
     // ─────────────────────────────────────────────────────────────
