@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -23,41 +23,39 @@ import java.io.IOException;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
+public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final UsuarioRepository usuarioRepository;
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request,
-                                        HttpServletResponse response,
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
 
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
         String email = oAuth2User.getAttribute("email");
 
-        UsuarioEntity usuario = usuarioRepository.findByEmail(email).orElse(null);
+        UsuarioEntity usuario = usuarioRepository.findByEmail(email != null ? email.trim() : "")
+                .orElse(null);
 
-        HttpSession session = request.getSession();
-
-        if (usuario != null) {
-            // Google ya autenticó con éxito: no requiere OTP
-            session.setAttribute("otp_verificado", true);
+        if (usuario != null && usuario.getEstado() != null && usuario.getEstado() == 1) {
+            // Guardar atributos de usuario en la sesión HTTP
+            HttpSession session = request.getSession(true);
             session.setAttribute("usuario_autenticado_id", usuario.getIdUsuario());
+            session.setAttribute("usuario_autenticado_nombre", usuario.getNombres() + " " + usuario.getApellidos());
             session.setAttribute("usuario_autenticado_rol", usuario.getRol().name());
-            session.setAttribute("usuario_autenticado_nombre", usuario.getNombres());
 
             log.info("Inicio de sesión exitoso con Google para: {} (Rol: {})", email, usuario.getRol());
 
-            // Redirigir según el rol del usuario
-            String destino = switch (usuario.getRol()) {
+            // Redirección directa por rol sin pasar por la raíz '/'
+            String targetUrl = switch (usuario.getRol()) {
                 case ADMINISTRADOR -> "/dashboard";
-                case ALMACENERO    -> "/alertas";
-                case VENDEDOR      -> "/venta";
+                case ALMACENERO -> "/compras";
+                case VENDEDOR -> "/venta";
             };
 
-            response.sendRedirect(request.getContextPath() + destino);
+            getRedirectStrategy().sendRedirect(request, response, targetUrl);
         } else {
-            response.sendRedirect(request.getContextPath() + "/dashboard");
+            getRedirectStrategy().sendRedirect(request, response, "/login?error=oauth2");
         }
     }
 }
