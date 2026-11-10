@@ -35,14 +35,13 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 );
             }
 
-            // 1. Buscar si el correo existe en la BD
+            // Buscar el usuario en la base de datos
             UsuarioEntity usuario = usuarioRepository.findByEmail(email.trim())
                     .orElseThrow(() -> new OAuth2AuthenticationException(
                             new OAuth2Error("unauthorized_google_email"),
                             "El correo " + email + " no está autorizado."
                     ));
 
-            // 2. Verificar que el usuario no esté inactivo
             if (usuario.getEstado() != null && usuario.getEstado() == 0) {
                 throw new OAuth2AuthenticationException(
                         new OAuth2Error("user_disabled"),
@@ -58,11 +57,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             );
 
         } catch (OAuth2AuthenticationException ex) {
-            throw ex;
+            throw ex; // Excepción controlada para Spring Security
         } catch (Exception ex) {
+            // Convierte cualquier otro error insospechado en fallo de OAuth2
             throw new OAuth2AuthenticationException(
                     new OAuth2Error("oauth2_auth_failed"),
-                    "Error de autenticación con Google: " + ex.getMessage()
+                    "Error interno durante la autenticación: " + ex.getMessage()
             );
         }
     }

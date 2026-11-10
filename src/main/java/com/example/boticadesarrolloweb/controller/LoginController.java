@@ -47,11 +47,11 @@ public class LoginController {
     // ─────────────────────────────────────────────────────────────
     @GetMapping("/login")
     public String login(@RequestParam(required = false) String error,
-            @RequestParam(required = false) String logout,
-            Model model) {
+                        @RequestParam(required = false) String logout,
+                        Model model) {
         if (error != null) {
             if ("oauth2".equalsIgnoreCase(error)) {
-                model.addAttribute("errorMsg", "No se pudo iniciar sesión con Google. Inténtalo de nuevo.");
+                model.addAttribute("errorMsg", "Su correo de Google no está registrado o autorizado en el sistema. Solicite al administrador que cree su cuenta.");
             } else {
                 model.addAttribute("errorMsg", "Usuario o contraseña incorrectos.");
             }

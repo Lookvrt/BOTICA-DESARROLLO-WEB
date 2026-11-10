@@ -46,8 +46,8 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception
-                        // En caso de intentar acceder a una vista sin permisos, redirige al dashboard
-                        .accessDeniedPage("/dashboard")
+                        // Redirigir a la pantalla de login con un parámetro de denegado (ruta pública)
+                        .accessDeniedPage("/login?denied=true")
                 )
                 .formLogin(form -> form
                         .loginPage("/login")
