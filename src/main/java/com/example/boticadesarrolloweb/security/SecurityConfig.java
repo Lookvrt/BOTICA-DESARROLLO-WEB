@@ -25,7 +25,7 @@ public class SecurityConfig {
                         // 1. Recursos estáticos y rutas públicas
                         .requestMatchers("/", "/login", "/login/otp-redirect", "/verificar-otp", "/reenviar-otp",
                                 "/recuperar-clave", "/recuperar-clave/**",
-                                "/oauth2/**", "/login/oauth2/**",
+                                "/oauth2/**", "/login/oauth2/**", "/error",
                                 "/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
 
                         // 2. Módulos exclusivos de ADMINISTRADOR (Dashboard, Usuarios y Reportes)

@@ -23,37 +23,47 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
-        OAuth2User oAuth2User = super.loadUser(userRequest);
-        Map<String, Object> attributes = oAuth2User.getAttributes();
-        String email = (String) attributes.get("email");
+        try {
+            OAuth2User oAuth2User = super.loadUser(userRequest);
+            Map<String, Object> attributes = oAuth2User.getAttributes();
+            String email = (String) attributes.get("email");
 
-        if (email == null || email.isBlank()) {
+            if (email == null || email.isBlank()) {
+                throw new OAuth2AuthenticationException(
+                        new OAuth2Error("email_missing"),
+                        "No se pudo obtener el correo de la cuenta de Google."
+                );
+            }
+
+            // 1. Buscar si el correo existe en la BD
+            UsuarioEntity usuario = usuarioRepository.findByEmail(email.trim())
+                    .orElseThrow(() -> new OAuth2AuthenticationException(
+                            new OAuth2Error("unauthorized_google_email"),
+                            "El correo " + email + " no está autorizado."
+                    ));
+
+            // 2. Verificar que el usuario no esté inactivo
+            if (usuario.getEstado() != null && usuario.getEstado() == 0) {
+                throw new OAuth2AuthenticationException(
+                        new OAuth2Error("user_disabled"),
+                        "La cuenta asociada a este correo se encuentra inactiva."
+                );
+            }
+
+            String roleName = "ROLE_" + usuario.getRol().name();
+            return new DefaultOAuth2User(
+                    Collections.singletonList(new SimpleGrantedAuthority(roleName)),
+                    attributes,
+                    "email"
+            );
+
+        } catch (OAuth2AuthenticationException ex) {
+            throw ex;
+        } catch (Exception ex) {
             throw new OAuth2AuthenticationException(
-                    new OAuth2Error("email_missing"),
-                    "No se pudo obtener el correo de la cuenta de Google."
+                    new OAuth2Error("oauth2_auth_failed"),
+                    "Error de autenticación con Google: " + ex.getMessage()
             );
         }
-
-        // 1. Buscar si el correo ya fue registrado por el Administrador
-        UsuarioEntity usuario = usuarioRepository.findByEmail(email.trim())
-                .orElseThrow(() -> new OAuth2AuthenticationException(
-                        new OAuth2Error("unauthorized_google_email"),
-                        "El correo " + email + " no está autorizado. Solicite acceso al administrador."
-                ));
-
-        // 2. Verificar que el usuario no esté inactivo (soft delete)
-        if (usuario.getEstado() != null && usuario.getEstado() == 0) {
-            throw new OAuth2AuthenticationException(
-                    new OAuth2Error("user_disabled"),
-                    "La cuenta asociada a este correo se encuentra inactiva."
-            );
-        }
-
-        String roleName = "ROLE_" + usuario.getRol().name();
-        return new DefaultOAuth2User(
-                Collections.singletonList(new SimpleGrantedAuthority(roleName)),
-                oAuth2User.getAttributes(),
-                "email"
-        );
     }
 }
