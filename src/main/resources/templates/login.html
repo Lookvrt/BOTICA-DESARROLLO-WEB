@@ -21,6 +21,18 @@
             <span>¡Contraseña actualizada con éxito! Ya puedes iniciar sesión con tu nueva contraseña.</span>
         </div>
 
+        <!-- Mensaje de error cuando falla el login convencional o de Google -->
+        <div th:if="${param.error}" class="alert alert-danger alert-dismissible fade show text-center" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <span th:if="${param.error[0] == 'oauth2'}">
+        Su correo de Google no está registrado o autorizado en el sistema. Solicite al administrador que cree su cuenta.
+        </span>
+            <span th:if="${param.error[0] != 'oauth2'}">
+        Usuario o contraseña incorrectos.
+        </span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
         <div class="col-12">
             <label for="usuario" class="form-label fw-semibold">Usuario o Correo</label>
             <input type="text" class="form-control" id="usuario" name="usuario" placeholder="Ej: admin o correo@ejemplo.com" required autofocus>
