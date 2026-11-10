@@ -71,7 +71,7 @@ public class LoginController {
         }
 
         if (denied != null) {
-            model.addAttribute("errorMsg", "No tiene permisos para acceder al recurso solicitado.");
+            model.addAttribute("errorMsg", "Su cuenta no tiene permisos para acceder a esta sección del sistema.");
         }
         if (error != null) {
             // CAMBIO: cada código de error de Google muestra su propio mensaje
