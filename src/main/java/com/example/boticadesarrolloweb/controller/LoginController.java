@@ -7,16 +7,14 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.security.core.GrantedAuthority;
 
 /**
  * Controlador de Login y verificación OTP (doble autenticación opcional).
@@ -63,13 +61,18 @@ public class LoginController {
     @GetMapping("/login")
     public String login(@RequestParam(required = false) String error,
                         @RequestParam(required = false) String logout,
+                        @RequestParam(required = false) String denied,
                         Authentication authentication,
                         Model model) {
 
-        if (estaAutenticado(authentication)) {
+        // Solo redirigir si el usuario está autenticado Y NO vienen parámetros de error, logout o denegación
+        if (error == null && logout == null && denied == null && estaAutenticado(authentication)) {
             return redireccionarPorRol(authentication);
         }
 
+        if (denied != null) {
+            model.addAttribute("errorMsg", "No tiene permisos para acceder al recurso solicitado.");
+        }
         if (error != null) {
             if ("oauth2".equalsIgnoreCase(error)) {
                 model.addAttribute("errorMsg", "Su correo de Google no está registrado o autorizado en el sistema. Solicite al administrador que cree su cuenta.");
