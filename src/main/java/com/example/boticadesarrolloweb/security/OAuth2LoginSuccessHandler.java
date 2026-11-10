@@ -16,9 +16,9 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 /**
- * Manejador ejecutado tras un inicio de sesión exitoso con Google OAuth2.
- * Configura la sesión HTTP con los atributos del usuario y redirige a la vista
- * correspondiente según su rol sin solicitar 2FA (Google ya certifica la identidad).
+ * Se ejecuta tras un inicio de sesión exitoso con Google OAuth2.
+ * Guarda los datos del usuario en la sesión y redirige según su rol
+ * sin pedir 2FA (Google ya certifica la identidad).
  */
 @Slf4j
 @Component
@@ -34,28 +34,29 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
         String email = oAuth2User.getAttribute("email");
 
-        UsuarioEntity usuario = usuarioRepository.findByEmail(email != null ? email.trim() : "")
+        UsuarioEntity usuario = usuarioRepository
+                .findByEmailIgnoreCase(email != null ? email.trim() : "")
                 .orElse(null);
 
         if (usuario != null && usuario.getEstado() != null && usuario.getEstado() == 1) {
-            // Guardar atributos de usuario en la sesión HTTP
             HttpSession session = request.getSession(true);
+            session.setAttribute("otp_verificado", true);
             session.setAttribute("usuario_autenticado_id", usuario.getIdUsuario());
             session.setAttribute("usuario_autenticado_nombre", usuario.getNombres() + " " + usuario.getApellidos());
             session.setAttribute("usuario_autenticado_rol", usuario.getRol().name());
 
             log.info("Inicio de sesión exitoso con Google para: {} (Rol: {})", email, usuario.getRol());
 
-            // Redirección directa por rol sin pasar por la raíz '/'
             String targetUrl = switch (usuario.getRol()) {
                 case ADMINISTRADOR -> "/dashboard";
-                case ALMACENERO -> "/compras";
+                case ALMACENERO -> "/alertas";
                 case VENDEDOR -> "/venta";
             };
 
             getRedirectStrategy().sendRedirect(request, response, targetUrl);
         } else {
-            getRedirectStrategy().sendRedirect(request, response, "/login?error=oauth2");
+            log.warn("Login con Google rechazado en el success handler para: {}", email);
+            getRedirectStrategy().sendRedirect(request, response, "/login?error=oauth2_unregistered");
         }
     }
 }

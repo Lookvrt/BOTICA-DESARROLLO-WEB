@@ -17,6 +17,7 @@ public class SecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+    private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -64,7 +65,7 @@ public class SecurityConfig {
                         .loginPage("/login")
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                         .successHandler(oAuth2LoginSuccessHandler)
-                        .failureUrl("/login?error=oauth2")
+                        .failureHandler(oAuth2LoginFailureHandler)   // ← CAMBIO: antes era .failureUrl("/login?error=oauth2")
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")

@@ -7,11 +7,13 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
-public interface UsuarioRepository extends JpaRepository<UsuarioEntity, Integer> {
+public interface    UsuarioRepository extends JpaRepository<UsuarioEntity, Integer> {
 
     Optional<UsuarioEntity> findByUsuario(String usuario);
 
     Optional<UsuarioEntity> findByEmail(String email);
+
+    Optional<UsuarioEntity> findByEmailIgnoreCase(String email);
 
     boolean existsByUsuario(String usuario);
 

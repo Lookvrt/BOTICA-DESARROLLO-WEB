@@ -74,11 +74,19 @@ public class LoginController {
             model.addAttribute("errorMsg", "No tiene permisos para acceder al recurso solicitado.");
         }
         if (error != null) {
-            if ("oauth2".equalsIgnoreCase(error)) {
-                model.addAttribute("errorMsg", "Su correo de Google no está registrado o autorizado en el sistema. Solicite al administrador que cree su cuenta.");
-            } else {
-                model.addAttribute("errorMsg", "Usuario o contraseña incorrectos.");
-            }
+            // CAMBIO: cada código de error de Google muestra su propio mensaje
+            String mensaje = switch (error.toLowerCase()) {
+                case "oauth2_unregistered" ->
+                        "Su correo de Google no está registrado en el sistema. Solicite al administrador que cree su cuenta.";
+                case "oauth2_disabled" ->
+                        "Su cuenta se encuentra inactiva. Contacte al administrador.";
+                case "oauth2_email" ->
+                        "No se pudo verificar el correo de su cuenta de Google.";
+                case "oauth2_failed", "oauth2" ->
+                        "No se pudo iniciar sesión con Google. Inténtelo de nuevo.";
+                default -> "Usuario o contraseña incorrectos.";
+            };
+            model.addAttribute("errorMsg", mensaje);
         }
         if (logout != null) {
             model.addAttribute("logoutMsg", "Sesión cerrada correctamente.");
@@ -167,8 +175,8 @@ public class LoginController {
     // ─────────────────────────────────────────────────────────────
     @GetMapping("/verificar-otp")
     public String verOtp(HttpSession session, Model model,
-            @RequestParam(required = false) String error,
-            @RequestParam(required = false) String reenvio) {
+                         @RequestParam(required = false) String error,
+                         @RequestParam(required = false) String reenvio) {
 
         Integer usuarioId = (Integer) session.getAttribute("otp_usuario_id");
         if (usuarioId == null) {
@@ -196,8 +204,8 @@ public class LoginController {
     // ─────────────────────────────────────────────────────────────
     @PostMapping("/verificar-otp")
     public String verificarOtp(@RequestParam("codigo") String codigo,
-            HttpSession session,
-            RedirectAttributes redirectAttrs) {
+                               HttpSession session,
+                               RedirectAttributes redirectAttrs) {
 
         Integer usuarioId = (Integer) session.getAttribute("otp_usuario_id");
         if (usuarioId == null)
