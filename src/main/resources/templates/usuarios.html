@@ -121,10 +121,19 @@
                             </span>
                         </td>
                         <td class="text-center">
-                            <span th:if="${u.estado == 1}" class="badge bg-success bg-opacity-25 text-success px-3 py-2 rounded-pill fw-medium">Activo</span>
-                            <span th:if="${u.estado == 0}" class="badge bg-secondary bg-opacity-25 text-secondary px-3 py-2 rounded-pill fw-medium">Inactivo</span>
+                            <span th:if="${u.cuentaBloqueada}" class="badge bg-danger bg-opacity-25 text-danger px-3 py-2 rounded-pill fw-medium" title="Bloqueado por 24 horas tras 5 intentos fallidos">
+                                <i class="bi bi-lock-fill me-1"></i>Bloqueado
+                            </span>
+                            <span th:if="${!u.cuentaBloqueada and u.estado == 1}" class="badge bg-success bg-opacity-25 text-success px-3 py-2 rounded-pill fw-medium">Activo</span>
+                            <span th:if="${!u.cuentaBloqueada and u.estado == 0}" class="badge bg-secondary bg-opacity-25 text-secondary px-3 py-2 rounded-pill fw-medium">Inactivo</span>
                         </td>
                         <td class="text-end pe-3">
+                            <button th:if="${u.cuentaBloqueada}" type="button" class="btn btn-outline-warning btn-sm me-1 rounded-2 btn-desbloquear"
+                                    th:data-id="${u.idUsuario}"
+                                    th:data-nombre="${u.nombres + ' ' + u.apellidos}"
+                                    title="Desbloquear cuenta de usuario">
+                                <i class="bi bi-unlock-fill"></i>
+                            </button>
                             <button type="button" class="btn btn-outline-primary btn-sm me-1 rounded-2 btn-editar"
                                     th:data-id="${u.idUsuario}"
                                     th:data-nombres="${u.nombres}"
@@ -283,6 +292,32 @@
                 <div class="modal-footer border-0 justify-content-center bg-light">
                     <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-danger px-4 fw-semibold">Eliminar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: CONFIRMACIÓN PARA DESBLOQUEAR (PS-02 / HZ-01) -->
+<div class="modal fade" id="modalDesbloquearUsuario" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow">
+            <form id="form-desbloquear" method="post">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                <div class="modal-body text-center p-4">
+                    <div class="text-warning mb-3">
+                        <i class="bi bi-unlock-fill fs-1"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">¿Desbloquear Cuenta?</h5>
+                    <p class="text-muted small mb-0">
+                        ¿Deseas restablecer los intentos fallidos y desbloquear a <strong id="unlock-user-nombre" class="text-dark"></strong>?
+                    </p>
+                </div>
+
+                <div class="modal-footer border-0 justify-content-center bg-light">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning px-4 fw-semibold text-dark">Desbloquear</button>
                 </div>
             </form>
         </div>

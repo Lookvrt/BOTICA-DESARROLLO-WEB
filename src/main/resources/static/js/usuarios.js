@@ -28,6 +28,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Modal Desbloquear
+    const modalDesbloquearEl = document.getElementById('modalDesbloquearUsuario');
+    if (modalDesbloquearEl) {
+        const modalDesbloquear = new bootstrap.Modal(modalDesbloquearEl);
+        const formDesbloquear  = document.getElementById('form-desbloquear');
+        const unlockNombre     = document.getElementById('unlock-user-nombre');
+
+        document.querySelectorAll('.btn-desbloquear').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.id;
+                const nombre = btn.dataset.nombre;
+                unlockNombre.textContent = nombre;
+                formDesbloquear.action = '/usuarios/desbloquear/' + id;
+                modalDesbloquear.show();
+            });
+        });
+    }
+
     const btnToggleOrden = document.getElementById("btnToggleOrden");
     if (btnToggleOrden) {
         btnToggleOrden.addEventListener("click", function () {

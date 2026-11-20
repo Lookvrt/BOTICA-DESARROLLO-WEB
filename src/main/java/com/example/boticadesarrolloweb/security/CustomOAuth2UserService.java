@@ -54,11 +54,18 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                             "Correo no autorizado."
                     ));
 
-            // 4. La cuenta debe estar activa
+            // 4. La cuenta debe estar activa y no bloqueada
             if (usuario.getEstado() != null && usuario.getEstado() == 0) {
                 throw new OAuth2AuthenticationException(
                         new OAuth2Error("user_disabled"),
                         "La cuenta asociada a este correo se encuentra inactiva."
+                );
+            }
+
+            if (usuario.isCuentaBloqueada()) {
+                throw new OAuth2AuthenticationException(
+                        new OAuth2Error("user_locked"),
+                        "La cuenta se encuentra bloqueada por 24 horas debido a múltiples intentos fallidos."
                 );
             }
 

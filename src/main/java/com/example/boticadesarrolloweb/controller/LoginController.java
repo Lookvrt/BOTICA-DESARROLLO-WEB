@@ -1,8 +1,10 @@
 package com.example.boticadesarrolloweb.controller;
 
 import com.example.boticadesarrolloweb.entity.UsuarioEntity;
+import com.example.boticadesarrolloweb.security.LoginAttemptService;
 import com.example.boticadesarrolloweb.service.OtpService;
 import com.example.boticadesarrolloweb.service.UsuarioService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,7 @@ public class LoginController {
 
     private final UsuarioService usuarioService;
     private final OtpService otpService;
+    private final LoginAttemptService loginAttemptService;
 
     @Value("${app.security.2fa.enabled:false}")
     private boolean twoFactorAuthEnabled;
@@ -62,6 +65,7 @@ public class LoginController {
     public String login(@RequestParam(required = false) String error,
                         @RequestParam(required = false) String logout,
                         @RequestParam(required = false) String denied,
+                        @RequestParam(required = false) Integer restantes,
                         Authentication authentication,
                         Model model) {
 
@@ -74,7 +78,6 @@ public class LoginController {
             model.addAttribute("errorMsg", "Su cuenta no tiene permisos para acceder a esta sección del sistema.");
         }
         if (error != null) {
-            // CAMBIO: cada código de error de Google muestra su propio mensaje
             String mensaje = switch (error.toLowerCase()) {
                 case "oauth2_unregistered" ->
                         "Su correo de Google no está registrado en el sistema. Solicite al administrador que cree su cuenta.";
@@ -84,6 +87,20 @@ public class LoginController {
                         "No se pudo verificar el correo de su cuenta de Google.";
                 case "oauth2_failed", "oauth2" ->
                         "No se pudo iniciar sesión con Google. Inténtelo de nuevo.";
+                case "locked_now" ->
+                        "Has alcanzado el límite de 5 intentos fallidos consecutivos. Tu cuenta ha sido bloqueada temporalmente por 24 horas por seguridad.";
+                case "locked" ->
+                        "Tu cuenta se encuentra bloqueada por 24 horas debido a múltiples intentos fallidos de inicio de sesión. Inténtalo más tarde o contacta al administrador.";
+                case "ip_locked" ->
+                        "Acceso bloqueado temporalmente por 24 horas debido a múltiples intentos fallidos desde este dispositivo.";
+                case "disabled" ->
+                        "Su cuenta se encuentra inactiva. Contacte al administrador.";
+                case "bad_credentials" -> {
+                    if (restantes != null && restantes > 0) {
+                        yield "Usuario o contraseña incorrectos. Te queda" + (restantes == 1 ? " 1 intento" : "n " + restantes + " intentos") + " antes de que tu cuenta sea bloqueada por 24 horas.";
+                    }
+                    yield "Usuario o contraseña incorrectos.";
+                }
                 default -> "Usuario o contraseña incorrectos.";
             };
             model.addAttribute("errorMsg", mensaje);
@@ -121,7 +138,7 @@ public class LoginController {
     // Si 2FA está activo genera OTP; si está inactivo da paso directo.
     // ─────────────────────────────────────────────────────────────
     @PostMapping("/login/otp-redirect")
-    public String otpRedirect(HttpSession session) {
+    public String otpRedirect(HttpSession session, HttpServletRequest request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
 
@@ -133,6 +150,9 @@ public class LoginController {
             log.warn("Usuario no encontrado en login redirect: {}", username);
             return "redirect:/login?error=true";
         }
+
+        // Reiniciar intentos fallidos tras login exitoso
+        loginAttemptService.registrarExito(usuario.getUsuario(), extraerIp(request));
 
         // Si la doble autenticación (2FA) está desactivada: entrar directo sin OTP
         if (!twoFactorAuthEnabled) {
@@ -205,6 +225,7 @@ public class LoginController {
     @PostMapping("/verificar-otp")
     public String verificarOtp(@RequestParam("codigo") String codigo,
                                HttpSession session,
+                               HttpServletRequest request,
                                RedirectAttributes redirectAttrs) {
 
         Integer usuarioId = (Integer) session.getAttribute("otp_usuario_id");
@@ -216,6 +237,7 @@ public class LoginController {
             return "redirect:/login";
 
         if (otpService.validarOtp(usuario, codigo.trim())) {
+            loginAttemptService.registrarExito(usuario.getUsuario(), extraerIp(request));
             // OTP correcto: marcar sesión como completamente verificada
             session.setAttribute("otp_verificado", true);
             session.setAttribute("usuario_autenticado_id", usuarioId);
@@ -274,5 +296,13 @@ public class LoginController {
         String visible = email.substring(0, 2);
         String dominio = email.substring(atIndex);
         return visible + "****" + dominio;
+    }
+
+    private String extraerIp(HttpServletRequest request) {
+        String xf = request.getHeader("X-Forwarded-For");
+        if (xf != null && !xf.isBlank() && !"unknown".equalsIgnoreCase(xf)) {
+            return xf.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }

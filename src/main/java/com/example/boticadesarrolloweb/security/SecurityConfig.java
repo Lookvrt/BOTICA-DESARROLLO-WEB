@@ -18,6 +18,7 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
+    private final CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -52,7 +53,7 @@ public class SecurityConfig {
                         .usernameParameter("usuario")
                         .passwordParameter("clave")
                         .successForwardUrl("/login/otp-redirect")
-                        .failureUrl("/login?error=true")
+                        .failureHandler(customAuthenticationFailureHandler)
                         .permitAll()
                 )
                 .rememberMe(remember -> remember

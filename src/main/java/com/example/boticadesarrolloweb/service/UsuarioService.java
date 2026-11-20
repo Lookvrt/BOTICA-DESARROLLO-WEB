@@ -102,4 +102,13 @@ public class UsuarioService {
         usuario.setOtpExpiracion(null);
         usuarioRepository.save(usuario);
     }
+
+    /** Desbloquea la cuenta de un usuario bloqueada por exceso de intentos fallidos (PS-02 / HZ-01) */
+    public void desbloquear(Integer idUsuario) {
+        UsuarioEntity usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        usuario.setIntentosFallidos(0);
+        usuario.setBloqueadoHasta(null);
+        usuarioRepository.save(usuario);
+    }
 }

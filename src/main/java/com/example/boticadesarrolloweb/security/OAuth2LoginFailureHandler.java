@@ -34,6 +34,7 @@ public class OAuth2LoginFailureHandler extends SimpleUrlAuthenticationFailureHan
         String destino = switch (codigo) {
             case "unauthorized_google_email"           -> "/login?error=oauth2_unregistered";
             case "user_disabled"                       -> "/login?error=oauth2_disabled";
+            case "user_locked"                         -> "/login?error=locked";
             case "email_missing", "email_not_verified" -> "/login?error=oauth2_email";
             default                                    -> "/login?error=oauth2_failed";
         };

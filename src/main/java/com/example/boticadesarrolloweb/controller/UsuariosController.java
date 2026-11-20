@@ -130,4 +130,22 @@ public class UsuariosController {
 
         return "redirect:/usuarios";
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // [4] Desbloquear cuenta de usuario bloqueada por fuerza bruta (24h)
+    // ─────────────────────────────────────────────────────────────
+    @PostMapping("/desbloquear/{id}")
+    public String desbloquear(@PathVariable("id") Integer id,
+                              RedirectAttributes redirectAttributes) {
+        try {
+            usuarioService.desbloquear(id);
+            redirectAttributes.addFlashAttribute("mensajeExito", "Cuenta de usuario desbloqueada correctamente.");
+        } catch (Exception e) {
+            log.error("Error al desbloquear usuario: {}", e.getMessage(), e);
+            redirectAttributes.addFlashAttribute("mensajeError",
+                    "No se pudo desbloquear el usuario: " + e.getMessage());
+        }
+
+        return "redirect:/usuarios";
+    }
 }

@@ -54,4 +54,39 @@ public class UsuarioEntity {
 
     @Column(name = "otp_expiracion")
     private LocalDateTime otpExpiracion;
+
+    // --- Seguridad: Protección contra Fuerza Bruta (PS-02 / HZ-01) ---
+    @Column(name = "intentos_fallidos")
+    @Builder.Default
+    private Integer intentosFallidos = 0;
+
+    @Column(name = "bloqueado_hasta")
+    private LocalDateTime bloqueadoHasta;
+
+    public boolean isCuentaBloqueada() {
+        if (bloqueadoHasta == null) {
+            return false;
+        }
+        return LocalDateTime.now().isBefore(bloqueadoHasta);
+    }
+
+    public boolean getCuentaBloqueada() {
+        return isCuentaBloqueada();
+    }
+
+    public Integer getIntentosFallidos() {
+        return intentosFallidos;
+    }
+
+    public void setIntentosFallidos(Integer intentosFallidos) {
+        this.intentosFallidos = intentosFallidos;
+    }
+
+    public LocalDateTime getBloqueadoHasta() {
+        return bloqueadoHasta;
+    }
+
+    public void setBloqueadoHasta(LocalDateTime bloqueadoHasta) {
+        this.bloqueadoHasta = bloqueadoHasta;
+    }
 }

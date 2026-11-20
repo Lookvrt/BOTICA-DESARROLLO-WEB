@@ -26,6 +26,7 @@ import java.io.IOException;
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final UsuarioRepository usuarioRepository;
+    private final LoginAttemptService loginAttemptService;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -39,6 +40,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 .orElse(null);
 
         if (usuario != null && usuario.getEstado() != null && usuario.getEstado() == 1) {
+            loginAttemptService.registrarExito(usuario.getUsuario(), request.getRemoteAddr());
             HttpSession session = request.getSession(true);
             session.setAttribute("otp_verificado", true);
             session.setAttribute("usuario_autenticado_id", usuario.getIdUsuario());
