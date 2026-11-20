@@ -1,10 +1,17 @@
 package com.example.boticadesarrolloweb.model;
 
-import jakarta.validation.constraints.*;
+import com.example.boticadesarrolloweb.enums.EstadoVenta;
+import com.example.boticadesarrolloweb.enums.MetodoPago;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
+/** Formulario de venta del módulo Ventas (crear / editar). */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -13,20 +20,18 @@ public class Venta {
 
     private Integer idVenta;
 
-    @NotNull(message = "El usuario vendedor es obligatorio")
-    private Integer idUsuario;
-
-    private LocalDateTime fechaVenta;
-
-    @Size(max = 30, message = "El tipo de comprobante no debe superar 30 caracteres")
-    private String tipoComprobante;
-
-    @Size(max = 50, message = "El número de comprobante no debe superar 50 caracteres")
-    private String numeroComprobante;
+    /** Obligatorio en facturas; las boletas del Punto de Venta no tienen cliente. */
+    private Integer idCliente;
 
     @NotNull(message = "Debe seleccionar un método de pago")
     @Builder.Default
     private MetodoPago metodoPago = MetodoPago.EFECTIVO;
+
+    // ── Solo lectura en el formulario ──
+    private LocalDateTime fechaVenta;
+    private String tipoComprobante;
+    private String numeroComprobante;
+    private String vendedor;
 
     @Builder.Default
     private BigDecimal total = BigDecimal.ZERO;
@@ -34,17 +39,8 @@ public class Venta {
     @Builder.Default
     private EstadoVenta estado = EstadoVenta.REGISTRADA;
 
-    public enum MetodoPago {
-        EFECTIVO,
-        TARJETA,
-        TRANSFERENCIA,
-        YAPE,
-        PLIN,
-        OTRO
-    }
-
-    public enum EstadoVenta {
-        REGISTRADA,
-        ANULADA
-    }
+    /** Una línea por producto (al guardar se reparte entre lotes en orden FEFO). */
+    @Valid
+    @Builder.Default
+    private List<DetalleVenta> detalles = new ArrayList<>();
 }

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragment/head :: common-head('Clientes - Ahorro y Salud')}">
+</head>
+<body class="bg-light">
+
+<div class="d-flex">
+    <div th:replace="~{fragment/sidebar :: sidebar('clientes')}"></div>
+
+    <main class="flex-grow-1 p-4 overflow-auto min-vh-100" style="margin-left: 260px;">
+
+        <!-- Encabezado de Sección -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h3 class="fw-bold mb-1">Gestión de Clientes</h3>
+                <p class="text-muted small mb-0">Empresas con RUC a las que la botica emite facturas desde el módulo de Ventas.</p>
+            </div>
+            <button id="btn-nuevo-cliente" class="btn btn-primary d-flex align-items-center gap-2 px-3 py-2 fw-semibold shadow-sm rounded-3">
+                <i class="bi bi-building-add fs-5"></i>
+                <span>Nuevo Cliente</span>
+            </button>
+        </div>
+
+        <!-- Mensajes de Alerta Flash -->
+        <div th:if="${mensaje != null}" class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 mb-3 shadow-sm rounded-3" role="alert">
+            <i class="bi bi-check-circle-fill fs-5"></i>
+            <span th:text="${mensaje}">Operación realizada con éxito.</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <div th:if="${error != null and modalAbrir == null}" class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 mb-3 shadow-sm rounded-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+            <span th:text="${error}">Ocurrió un error.</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- Tarjeta Principal de la Tabla -->
+        <div class="card border-0 p-4 shadow-sm bg-white rounded-3">
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="fw-semibold text-secondary" th:text="${#lists.size(clientes) + ' clientes registrados'}">0 clientes registrados</span>
+                <span th:if="${(query != null && !query.isEmpty()) || orden == 'desc'}" class="badge bg-light text-dark border">
+                    <span th:if="${query != null && !query.isEmpty()}" th:text="'Filtrado por: &quot;' + ${query} + '&quot;'"></span>
+                    <span class="ms-1 fw-bold" th:text="'(' + (${orden == 'desc' ? 'Z-A' : 'A-Z'}) + ')'"></span>
+                    <a th:href="@{/clientes}" class="ms-1 text-danger text-decoration-none" title="Limpiar filtro">✕</a>
+                </span>
+            </div>
+
+            <!-- Búsqueda por razón social o RUC y orden A-Z / Z-A -->
+            <form th:action="@{/clientes}" method="get" id="formBuscarClientes" class="row g-2 mb-3 pb-3 border-bottom align-items-center">
+                <div class="col-12 col-md-5 col-lg-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" class="form-control border-start-0 ps-0 shadow-none"
+                               placeholder="Buscar por razón social o RUC..." th:value="${query}">
+                    </div>
+                </div>
+
+                <input type="hidden" name="orden" id="ordenInput" th:value="${orden != null ? orden : 'asc'}">
+
+                <div class="col-auto">
+                    <button type="button" id="btnToggleOrden" class="btn btn-outline-secondary d-flex align-items-center gap-2 px-3 fw-medium">
+                        <i class="bi" th:classappend="${orden == 'desc' ? 'bi-sort-alpha-up-alt' : 'bi-sort-alpha-down'}"></i>
+                        <span th:text="${orden == 'desc' ? 'Ordenar: Z - A' : 'Ordenar: A - Z'}">Ordenar: A - Z</span>
+                    </button>
+                </div>
+
+                <div class="col-auto" th:if="${(query != null && !query.isEmpty()) || orden == 'desc'}">
+                    <a th:href="@{/clientes}" class="btn btn-outline-danger px-3 fw-medium">Limpiar</a>
+                </div>
+            </form>
+
+            <!-- Tabla de Clientes -->
+            <div class="table-responsive">
+                <table class="table align-middle table-hover">
+                    <thead class="table-light border-bottom">
+                    <tr class="text-secondary small fw-semibold text-uppercase">
+                        <th class="py-3">ID</th>
+                        <th class="py-3">RUC</th>
+                        <th class="py-3">Razón Social</th>
+                        <th class="py-3">Correo</th>
+                        <th class="py-3">Teléfono</th>
+                        <th class="py-3">Dirección</th>
+                        <th class="py-3 text-center">Estado</th>
+                        <th class="py-3 text-end pe-3">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${#lists.isEmpty(clientes)}">
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-buildings fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            No se encontraron clientes registrados.
+                        </td>
+                    </tr>
+                    <tr th:each="c : ${clientes}" class="border-bottom">
+                        <td class="py-3 text-muted fw-semibold" th:text="${'CLI-' + #numbers.formatInteger(c.idCliente, 3)}">CLI-001</td>
+                        <td class="py-3"><span class="badge bg-light text-dark border" th:text="${c.ruc}">20123456789</span></td>
+                        <td class="py-3 fw-semibold text-dark" th:text="${c.razonSocial}">Razón Social</td>
+                        <td class="text-secondary" th:text="${c.correo ?: '-'}">correo@empresa.com</td>
+                        <td class="text-secondary" th:text="${c.telefono ?: '-'}">987654321</td>
+                        <td class="text-secondary text-truncate" style="max-width: 200px;" th:text="${c.direccion ?: '-'}">Av. Ejemplo 123</td>
+                        <td class="text-center">
+                            <span th:if="${c.estado == 1}" class="badge bg-success bg-opacity-25 text-success px-3 py-2 rounded-pill fw-medium">Activo</span>
+                            <span th:if="${c.estado != 1}" class="badge bg-secondary bg-opacity-25 text-secondary px-3 py-2 rounded-pill fw-medium">Inactivo</span>
+                        </td>
+                        <td class="text-end pe-3">
+                            <a th:href="@{/clientes/editar/{id}(id=${c.idCliente})}"
+                               class="btn btn-outline-primary btn-sm me-1 rounded-2" title="Editar cliente">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <button type="button" class="btn btn-outline-danger btn-sm rounded-2 btn-eliminar-cliente"
+                                    th:data-id="${c.idCliente}" th:data-nombre="${c.razonSocial}" title="Eliminar cliente">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- MODAL: NUEVO / EDITAR CLIENTE (mismo formulario; si trae idCliente es edición) -->
+<div class="modal fade" id="modalCliente" tabindex="-1" aria-labelledby="modalClienteLabel" aria-hidden="true"
+     th:data-abrir="${modalAbrir != null}" th:data-edicion="${cliente.idCliente != null}">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <form th:action="@{/clientes/guardar}" method="post" th:object="${cliente}" id="form-cliente" novalidate>
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <input type="hidden" th:field="*{idCliente}"/>
+
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold" id="modalClienteLabel">
+                        <th:block th:if="*{idCliente == null}"><i class="bi bi-building-add me-2"></i>Registrar Nuevo Cliente</th:block>
+                        <th:block th:if="*{idCliente != null}"><i class="bi bi-pencil-square me-2"></i><span
+                                th:text="'Editar Cliente CLI-' + ${#numbers.formatInteger(cliente.idCliente, 3)}">Editar Cliente</span></th:block>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <div th:if="${modalAbrir != null and error != null}" class="alert alert-danger py-2 small" th:text="${error}"></div>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="ruc" class="form-label fw-semibold">RUC <span class="text-danger">*</span></label>
+                            <input type="text" th:field="*{ruc}" id="ruc" class="form-control" maxlength="11" inputmode="numeric"
+                                   placeholder="20XXXXXXXXX" required th:classappend="${#fields.hasErrors('ruc')} ? 'is-invalid'">
+                            <div class="invalid-feedback" id="ruc-error"
+                                 th:text="${#fields.hasErrors('ruc')} ? ${#fields.errors('ruc')[0]} : 'RUC inválido'">RUC inválido</div>
+                            <div class="form-text">11 dígitos validados con el dígito verificador de SUNAT.</div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <label for="razonSocial" class="form-label fw-semibold">Razón Social <span class="text-danger">*</span></label>
+                            <input type="text" th:field="*{razonSocial}" id="razonSocial" class="form-control" maxlength="150"
+                                   placeholder="Ej: Clínica San Pablo S.A.C." required th:classappend="${#fields.hasErrors('razonSocial')} ? 'is-invalid'">
+                            <div class="invalid-feedback"
+                                 th:text="${#fields.hasErrors('razonSocial')} ? ${#fields.errors('razonSocial')[0]} : 'La razón social es obligatoria'">La razón social es obligatoria</div>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="direccion" class="form-label fw-semibold">Dirección fiscal</label>
+                            <input type="text" th:field="*{direccion}" id="direccion" class="form-control" maxlength="200"
+                                   placeholder="Av. / Jr. ..., distrito, provincia" th:classappend="${#fields.hasErrors('direccion')} ? 'is-invalid'">
+                            <div class="invalid-feedback" th:errors="*{direccion}"></div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="telefono" class="form-label fw-semibold">Teléfono</label>
+                            <input type="text" th:field="*{telefono}" id="telefono" class="form-control" maxlength="20"
+                                   th:classappend="${#fields.hasErrors('telefono')} ? 'is-invalid'">
+                            <div class="invalid-feedback" th:errors="*{telefono}"></div>
+                        </div>
+
+                        <div class="col-md-5">
+                            <label for="correo" class="form-label fw-semibold">Correo</label>
+                            <input type="email" th:field="*{correo}" id="correo" class="form-control" maxlength="100"
+                                   placeholder="facturacion@empresa.com" th:classappend="${#fields.hasErrors('correo')} ? 'is-invalid'">
+                            <div class="invalid-feedback" th:errors="*{correo}"></div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label for="estado" class="form-label fw-semibold">Estado</label>
+                            <select th:field="*{estado}" id="estado" class="form-select">
+                                <option value="1">Activo</option>
+                                <option value="0">Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4 fw-semibold"
+                            th:text="*{idCliente == null} ? 'Guardar Cliente' : 'Actualizar Cliente'">Guardar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: CONFIRMACIÓN PARA ELIMINAR -->
+<div class="modal fade" id="modalEliminarCliente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow">
+            <form id="form-eliminar-cliente" method="post">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <div class="modal-body text-center p-4">
+                    <div class="text-danger mb-3"><i class="bi bi-exclamation-triangle-fill fs-1"></i></div>
+                    <h5 class="fw-bold mb-2">¿Eliminar Cliente?</h5>
+                    <p class="text-muted small mb-0">
+                        ¿Seguro que deseas eliminar a <strong id="delete-cliente-nombre" class="text-dark"></strong>?
+                        Si tiene ventas registradas se desactivará en lugar de eliminarse.
+                    </p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center bg-light">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger px-4 fw-semibold">Eliminar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous"></script>
+<script th:src="@{/js/clientes.js}"></script>
+</body>
+</html>

@@ -25,6 +25,11 @@ public class VentaEntity {
     @JoinColumn(name = "id_usuario", nullable = false)
     private UsuarioEntity usuario;
 
+    /** Cliente empresa (factura). Nulo en ventas del Punto de Venta (boleta, público general). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_cliente")
+    private ClienteEntity cliente;
+
     // La columna en la BD no tiene DEFAULT, así que la fecha se asigna al insertar (ver @PrePersist)
     @Column(name = "fecha_venta", nullable = false, updatable = false)
     private LocalDateTime fechaVenta;

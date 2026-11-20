@@ -22,6 +22,19 @@ public interface VentaRepository extends JpaRepository<VentaEntity, Integer> {
 
     long countByEstado(EstadoVenta estado);
 
+    boolean existsByClienteIdCliente(Integer idCliente);
+
+    /** Listado del módulo Ventas: por comprobante, razón social o RUC del cliente; más recientes primero. */
+    @Query("SELECT v FROM VentaEntity v LEFT JOIN FETCH v.cliente c JOIN FETCH v.usuario u WHERE " +
+            "(:q IS NULL OR :q = '' OR LOWER(v.numeroComprobante) LIKE LOWER(CONCAT('%', :q, '%')) " +
+            "OR LOWER(c.razonSocial) LIKE LOWER(CONCAT('%', :q, '%')) OR c.ruc LIKE CONCAT('%', :q, '%')) " +
+            "ORDER BY v.fechaVenta DESC, v.idVenta DESC")
+    List<VentaEntity> buscarParaListado(@Param("q") String q);
+
+    /** Último número de una serie (p. ej. 'F001-'); el relleno con ceros hace que MAX funcione como texto. */
+    @Query("SELECT MAX(v.numeroComprobante) FROM VentaEntity v WHERE v.numeroComprobante LIKE CONCAT(:serie, '%')")
+    String ultimoNumeroDeSerie(@Param("serie") String serie);
+
     List<VentaEntity> findTop7ByEstadoOrderByFechaVentaDesc(EstadoVenta estado);
 
     @Query(value = "SELECT p.nombre FROM detalle_ventas dv " +

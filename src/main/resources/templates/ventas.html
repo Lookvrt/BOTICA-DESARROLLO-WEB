@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragment/head :: common-head('Ventas - Ahorro y Salud')}">
+</head>
+<body class="bg-light">
+
+<div class="d-flex">
+    <div th:replace="~{fragment/sidebar :: sidebar('ventas')}"></div>
+
+    <main class="flex-grow-1 p-4 overflow-auto min-vh-100" style="margin-left: 260px;">
+
+        <!-- Encabezado de Sección -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h3 class="fw-bold mb-1">Gestión de Ventas</h3>
+                <p class="text-muted small mb-0">Todas las ventas de la botica: boletas del Punto de Venta y facturas a clientes con RUC.</p>
+            </div>
+            <button id="btn-nueva-venta" class="btn btn-primary d-flex align-items-center gap-2 px-3 py-2 fw-semibold shadow-sm rounded-3">
+                <i class="bi bi-receipt fs-5"></i>
+                <span>Nueva Venta</span>
+            </button>
+        </div>
+
+        <!-- Mensajes de Alerta Flash -->
+        <div th:if="${mensaje != null}" class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 mb-3 shadow-sm rounded-3" role="alert">
+            <i class="bi bi-check-circle-fill fs-5"></i>
+            <span th:text="${mensaje}">Operación realizada con éxito.</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <div th:if="${error != null and modalAbrir == null}" class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 mb-3 shadow-sm rounded-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+            <span th:text="${error}">Ocurrió un error.</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- Tarjeta Principal de la Tabla -->
+        <div class="card border-0 p-4 shadow-sm bg-white rounded-3">
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="fw-semibold text-secondary" th:text="${#lists.size(ventas) + ' ventas registradas'}">0 ventas registradas</span>
+                <span th:if="${query != null && !query.isEmpty()}" class="badge bg-light text-dark border">
+                    <span th:text="'Filtrado por: &quot;' + ${query} + '&quot;'"></span>
+                    <a th:href="@{/ventas}" class="ms-1 text-danger text-decoration-none" title="Limpiar filtro">✕</a>
+                </span>
+            </div>
+
+            <!-- Búsqueda por comprobante o cliente -->
+            <form th:action="@{/ventas}" method="get" class="row g-2 mb-3 pb-3 border-bottom align-items-center">
+                <div class="col-12 col-md-6 col-lg-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" class="form-control border-start-0 ps-0 shadow-none"
+                               placeholder="Buscar por comprobante, cliente o RUC..." th:value="${query}">
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-outline-secondary px-3 fw-medium">Buscar</button>
+                </div>
+                <div class="col-auto" th:if="${query != null && !query.isEmpty()}">
+                    <a th:href="@{/ventas}" class="btn btn-outline-danger px-3 fw-medium">Limpiar</a>
+                </div>
+            </form>
+
+            <!-- Tabla de Ventas -->
+            <div class="table-responsive">
+                <table class="table align-middle table-hover">
+                    <thead class="table-light border-bottom">
+                    <tr class="text-secondary small fw-semibold text-uppercase">
+                        <th class="py-3">Comprobante</th>
+                        <th class="py-3">Fecha</th>
+                        <th class="py-3">Cliente</th>
+                        <th class="py-3">Vendedor</th>
+                        <th class="py-3">Pago</th>
+                        <th class="py-3 text-end">Total</th>
+                        <th class="py-3 text-center">Estado</th>
+                        <th class="py-3 text-end pe-3">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${#lists.isEmpty(ventas)}">
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-receipt-cutoff fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            No se encontraron ventas.
+                        </td>
+                    </tr>
+                    <tr th:each="v : ${ventas}" class="border-bottom"
+                        th:classappend="${#strings.toString(v.estado) == 'ANULADA'} ? 'text-muted opacity-75'">
+                        <td class="py-3">
+                            <span class="badge me-1"
+                                  th:classappend="${v.tipoComprobante == 'FACTURA'} ? 'bg-primary bg-opacity-10 text-primary' : 'bg-secondary bg-opacity-10 text-secondary'"
+                                  th:text="${v.tipoComprobante == 'FACTURA' ? 'Factura' : 'Boleta'}">Boleta</span>
+                            <span class="fw-semibold" th:text="${v.numeroComprobante ?: ('#' + v.idVenta)}">B001-00000001</span>
+                        </td>
+                        <td class="py-3" th:text="${v.fechaVenta != null ? #temporals.format(v.fechaVenta, 'dd/MM/yyyy HH:mm') : '-'}">01/01/2026 10:00</td>
+                        <td class="py-3">
+                            <th:block th:if="${v.cliente != null}">
+                                <div class="fw-medium text-dark" th:text="${v.cliente.razonSocial}">Empresa S.A.C.</div>
+                                <div class="small text-secondary" th:text="'RUC ' + ${v.cliente.ruc}">RUC 20...</div>
+                            </th:block>
+                            <span th:if="${v.cliente == null}" class="text-secondary">Público general</span>
+                        </td>
+                        <td class="py-3 text-secondary" th:text="${v.usuario.nombres}">Vendedor</td>
+                        <td class="py-3" th:text="${v.metodoPago.descripcion}">Efectivo</td>
+                        <td class="py-3 text-end fw-semibold text-dark" th:text="${'S/ ' + #numbers.formatDecimal(v.total, 1, 2)}">S/ 0.00</td>
+                        <td class="py-3 text-center">
+                            <span th:if="${#strings.toString(v.estado) == 'REGISTRADA'}" class="badge bg-success bg-opacity-25 text-success px-3 py-2 rounded-pill fw-medium">Registrada</span>
+                            <span th:if="${#strings.toString(v.estado) == 'ANULADA'}" class="badge bg-danger bg-opacity-25 text-danger px-3 py-2 rounded-pill fw-medium">Anulada</span>
+                        </td>
+                        <td class="text-end pe-3">
+                            <th:block th:if="${#strings.toString(v.estado) == 'REGISTRADA'}">
+                                <a th:href="@{/ventas/editar/{id}(id=${v.idVenta})}"
+                                   class="btn btn-outline-primary btn-sm me-1 rounded-2" title="Editar venta">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-danger btn-sm rounded-2 btn-anular-venta"
+                                        th:data-id="${v.idVenta}" th:data-comprobante="${v.numeroComprobante}" title="Anular venta">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            </th:block>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- MODAL: NUEVA VENTA / EDITAR VENTA (mismo formulario; si trae idVenta es edición) -->
+<div class="modal fade" id="modalVenta" tabindex="-1" aria-labelledby="modalVentaLabel" aria-hidden="true"
+     th:data-abrir="${modalAbrir != null}" th:data-edicion="${venta.idVenta != null}">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <form th:action="@{/ventas/guardar}" method="post" th:object="${venta}" id="form-venta" novalidate
+                  th:attr="data-sin-productos=${ventaSinProductos == true},data-total-original=*{total}">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <input type="hidden" th:field="*{idVenta}"/>
+
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold" id="modalVentaLabel">
+                        <th:block th:if="*{idVenta == null}"><i class="bi bi-receipt me-2"></i>Registrar Nueva Venta</th:block>
+                        <th:block th:if="*{idVenta != null}"><i class="bi bi-pencil-square me-2"></i><span
+                                th:text="'Editar Venta ' + *{numeroComprobante}">Editar Venta</span></th:block>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <div th:if="${modalAbrir != null and error != null}" class="alert alert-danger py-2 small" th:text="${error}"></div>
+
+                    <div th:if="${ventaSinProductos == true}" class="alert alert-warning py-2 small d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-circle"></i>
+                        <span>Esta venta se registró sin detalle de productos (total <strong
+                                th:text="${'S/ ' + #numbers.formatDecimal(venta.total, 1, 2)}">S/ 0.00</strong>). Puedes actualizar el
+                            cliente y el método de pago conservando su total; si agregas productos, el total se calculará con ellos.</span>
+                    </div>
+
+                    <div th:if="*{idVenta != null}" class="alert alert-light border py-2 small d-flex align-items-center gap-2">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        <span>Los cambios en productos y cantidades ajustan el inventario. Los productos que ya estaban en la venta
+                            conservan su precio original.</span>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6 col-lg-5">
+                            <label for="venta-idCliente" class="form-label fw-semibold">Cliente
+                                <span class="text-danger" th:if="*{tipoComprobante == 'FACTURA'}">*</span></label>
+                            <select id="venta-idCliente" th:field="*{idCliente}" class="form-select"
+                                    th:attr="data-requerido=*{tipoComprobante == 'FACTURA'}">
+                                <option value="" th:text="*{tipoComprobante == 'FACTURA'} ? 'Seleccionar cliente' : 'Público general'">Seleccionar cliente</option>
+                                <option th:each="c : ${clientes}" th:value="${c.idCliente}" th:text="${c.razonSocial + ' — RUC ' + c.ruc}"></option>
+                            </select>
+                            <div class="form-text" th:if="${#lists.isEmpty(clientes)}">
+                                No hay clientes activos. <a th:href="@{/clientes#nuevo}">Registra uno en Clientes</a>.
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-lg-3">
+                            <label for="venta-metodoPago" class="form-label fw-semibold">Método de pago <span class="text-danger">*</span></label>
+                            <select id="venta-metodoPago" th:field="*{metodoPago}" class="form-select" required>
+                                <option th:each="m : ${metodosPago}" th:value="${m.name()}" th:text="${m.descripcion}">Efectivo</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 col-lg-2">
+                            <label class="form-label fw-semibold">Comprobante</label>
+                            <div class="form-control bg-light text-truncate"
+                                 th:text="*{idVenta == null} ? 'Factura F001' : (*{tipoComprobante == 'FACTURA'} ? 'Factura' : 'Boleta')">Factura</div>
+                            <input type="hidden" th:field="*{tipoComprobante}">
+                        </div>
+
+                        <div class="col-md-6 col-lg-2">
+                            <label class="form-label fw-semibold">Vendedor</label>
+                            <div class="form-control bg-light text-truncate" th:text="*{vendedor} ?: 'Tú'">Tú</div>
+                        </div>
+                    </div>
+
+                    <!-- Buscador de productos -->
+                    <label for="buscar-producto-venta" class="form-label fw-semibold">Productos <span class="text-danger">*</span></label>
+                    <div class="position-relative mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-search"></i></span>
+                            <input type="text" id="buscar-producto-venta" class="form-control border-start-0 ps-0 shadow-none"
+                                   placeholder="Buscar producto por nombre, código o principio activo para agregarlo..." autocomplete="off">
+                        </div>
+                        <div id="resultados-producto-venta" class="list-group position-absolute w-100 shadow-sm d-none"
+                             style="z-index: 1060; max-height: 260px; overflow-y: auto;"></div>
+                    </div>
+
+                    <!-- Tabla de productos de la venta -->
+                    <div class="table-responsive border rounded-3">
+                        <table class="table align-middle mb-0">
+                            <thead class="table-light">
+                            <tr class="text-secondary small fw-semibold">
+                                <th class="ps-3">Producto</th>
+                                <th class="text-center">Disponible</th>
+                                <th style="width: 120px;">Cantidad</th>
+                                <th class="text-end">P. unit. (S/)</th>
+                                <th class="text-end">Subtotal</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody id="tabla-detalle-venta">
+                            <tr th:each="d : *{detalles}" class="fila-detalle"
+                                th:attr="data-id=${d.idProducto},data-stock=${d.stockDisponible},data-precio=${d.precioUnitario}">
+                                <td class="ps-3">
+                                    <div class="fw-semibold nombre-detalle" th:text="${d.nombreProducto}">Producto</div>
+                                    <div class="small text-secondary" th:text="${d.codigoProducto}">MED000</div>
+                                    <input type="hidden" data-campo="idProducto" th:value="${d.idProducto}">
+                                </td>
+                                <td class="text-center" th:text="${d.stockDisponible}">0</td>
+                                <td><input type="number" data-campo="cantidad" class="form-control form-control-sm" min="1" step="1"
+                                           th:value="${d.cantidad}" th:attr="max=${d.stockDisponible}" required></td>
+                                <td class="text-end" th:text="${#numbers.formatDecimal(d.precioUnitario, 1, 2)}">0.00</td>
+                                <td class="text-end fw-semibold subtotal-detalle">0.00</td>
+                                <td class="text-end pe-3">
+                                    <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-quitar-detalle" title="Quitar">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr id="fila-sin-detalle">
+                                <td colspan="6" class="text-center text-secondary py-4">
+                                    Busca y agrega los productos que vas a vender.
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <span class="small text-secondary">
+                            El precio es el de venta del producto. Las unidades salen primero de los lotes que vencen antes.
+                        </span>
+                        <div class="text-end">
+                            <span class="text-secondary me-2">Total</span>
+                            <span class="fs-5 fw-bold" id="total-venta">S/ 0.00</span>
+                        </div>
+                    </div>
+                    <div id="error-detalle-venta" class="alert alert-warning py-2 small mt-3 d-none"></div>
+                </div>
+
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4 fw-semibold"
+                            th:text="*{idVenta == null} ? 'Registrar Venta' : 'Actualizar Venta'">Registrar Venta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: CONFIRMACIÓN PARA ANULAR -->
+<div class="modal fade" id="modalAnularVenta" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow">
+            <form id="form-anular-venta" method="post">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <div class="modal-body text-center p-4">
+                    <div class="text-danger mb-3"><i class="bi bi-exclamation-triangle-fill fs-1"></i></div>
+                    <h5 class="fw-bold mb-2">¿Anular Venta?</h5>
+                    <p class="text-muted small mb-0">
+                        Se anulará <strong id="anular-venta-comprobante" class="text-dark"></strong> y sus unidades
+                        volverán al inventario. Esta acción no se puede deshacer.
+                    </p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center bg-light">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger px-4 fw-semibold">Anular</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous"></script>
+<script th:src="@{/js/ventas.js}"></script>
+</body>
+</html>

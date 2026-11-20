@@ -89,40 +89,13 @@ public class PuntoVentaService {
                 .total(BigDecimal.ZERO)
                 .build());
 
-        LocalDate hoy = LocalDate.now();
         BigDecimal total = BigDecimal.ZERO;
 
         for (Map.Entry<Integer, Integer> entry : cantidades.entrySet()) {
             ProductoEntity producto = productoRepository.findById(entry.getKey())
                     .orElseThrow(() -> new VentaException("Uno de los productos ya no está disponible."));
-            int porVender = entry.getValue();
-
             // El precio se toma siempre de la BD, nunca del navegador
-            BigDecimal precio = producto.getPrecioVenta();
-            List<LoteEntity> lotes = loteRepository.findLotesVendiblesParaVenta(producto.getIdProducto(), hoy);
-            int disponible = lotes.stream().mapToInt(LoteEntity::getStockActual).sum();
-            if (disponible < porVender) {
-                throw new VentaException("Stock insuficiente para \"" + producto.getNombre()
-                        + "\": disponible " + disponible + ", solicitado " + porVender + ".");
-            }
-
-            for (LoteEntity lote : lotes) {
-                if (porVender == 0) break;
-                int tomar = Math.min(porVender, lote.getStockActual());
-                lote.setStockActual(lote.getStockActual() - tomar);
-                porVender -= tomar;
-
-                BigDecimal subtotal = precio.multiply(BigDecimal.valueOf(tomar));
-                detalleVentaRepository.save(DetalleVentaEntity.builder()
-                        .venta(venta)
-                        .producto(producto)
-                        .lote(lote)
-                        .cantidad(tomar)
-                        .precioUnitario(precio)
-                        .subtotal(subtotal)
-                        .build());
-                total = total.add(subtotal);
-            }
+            total = total.add(descontarStockFefo(venta, producto, entry.getValue(), producto.getPrecioVenta()));
         }
 
         venta.setTotal(total);
@@ -133,5 +106,41 @@ public class PuntoVentaService {
 
         return new VentaResponse(venta.getIdVenta(), venta.getNumeroComprobante(), total,
                 venta.getMetodoPago().getDescripcion());
+    }
+
+    /**
+     * Descuenta {@code cantidad} unidades del producto de sus lotes no vencidos en orden FEFO
+     * (bloqueándolos), creando un detalle de venta por cada lote usado. Devuelve el subtotal.
+     * Lo usan el Punto de Venta y el módulo Ventas.
+     */
+    @Transactional
+    public BigDecimal descontarStockFefo(VentaEntity venta, ProductoEntity producto, int cantidad, BigDecimal precio) {
+        List<LoteEntity> lotes = loteRepository.findLotesVendiblesParaVenta(producto.getIdProducto(), LocalDate.now());
+        int disponible = lotes.stream().mapToInt(LoteEntity::getStockActual).sum();
+        if (disponible < cantidad) {
+            throw new VentaException("Stock insuficiente para \"" + producto.getNombre()
+                    + "\": disponible " + disponible + ", solicitado " + cantidad + ".");
+        }
+
+        BigDecimal total = BigDecimal.ZERO;
+        int porVender = cantidad;
+        for (LoteEntity lote : lotes) {
+            if (porVender == 0) break;
+            int tomar = Math.min(porVender, lote.getStockActual());
+            lote.setStockActual(lote.getStockActual() - tomar);
+            porVender -= tomar;
+
+            BigDecimal subtotal = precio.multiply(BigDecimal.valueOf(tomar));
+            detalleVentaRepository.save(DetalleVentaEntity.builder()
+                    .venta(venta)
+                    .producto(producto)
+                    .lote(lote)
+                    .cantidad(tomar)
+                    .precioUnitario(precio)
+                    .subtotal(subtotal)
+                    .build());
+            total = total.add(subtotal);
+        }
+        return total;
     }
 }

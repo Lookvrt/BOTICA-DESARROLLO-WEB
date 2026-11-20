@@ -50,6 +50,8 @@ public class SecurityConfig {
 
                         // 3. Módulos compartidos
                         .requestMatchers("/venta", "/venta/**").hasAnyRole("ADMINISTRADOR", "VENDEDOR")
+                        .requestMatchers("/ventas", "/ventas/**").hasAnyRole("ADMINISTRADOR", "VENDEDOR")
+                        .requestMatchers("/clientes", "/clientes/**").hasAnyRole("ADMINISTRADOR", "VENDEDOR")
                         .requestMatchers("/inventario", "/inventario/**").hasAnyRole("ADMINISTRADOR", "ALMACENERO")
                         .requestMatchers("/compras", "/compras/**").hasAnyRole("ADMINISTRADOR", "ALMACENERO")
                         .requestMatchers("/proveedores", "/proveedores/**").hasAnyRole("ADMINISTRADOR", "ALMACENERO")
