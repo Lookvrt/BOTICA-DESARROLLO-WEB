@@ -54,7 +54,9 @@ public class CustomAuthenticationFailureHandler extends SimpleUrlAuthenticationF
             case YA_BLOQUEADO    -> "/login?error=locked";
             case IP_BLOQUEADA    -> "/login?error=ip_locked";
             case INTENTO_REGISTRADO -> {
-                if (resultado.getIntentosRestantes() != null) {
+                // Para intentos 1 y 2 (restantes = 4 o 3) no se envían intentos restantes en la URL
+                // A partir del intento 3 (restantes <= 2) se notifica para advertir del bloqueo
+                if (resultado.getIntentosRestantes() != null && resultado.getIntentosRestantes() <= 2) {
                     yield "/login?error=bad_credentials&restantes=" + resultado.getIntentosRestantes();
                 }
                 yield "/login?error=bad_credentials";

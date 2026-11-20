@@ -1,22 +1,30 @@
 package com.example.boticadesarrolloweb.controller;
 
 import com.example.boticadesarrolloweb.entity.UsuarioEntity;
+import com.example.boticadesarrolloweb.enums.Rol;
 import com.example.boticadesarrolloweb.security.LoginAttemptService;
 import com.example.boticadesarrolloweb.service.OtpService;
 import com.example.boticadesarrolloweb.service.UsuarioService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.List;
 
 /**
  * Controlador de Login y verificación OTP (doble autenticación opcional).
@@ -96,7 +104,9 @@ public class LoginController {
                 case "disabled" ->
                         "Su cuenta se encuentra inactiva. Contacte al administrador.";
                 case "bad_credentials" -> {
-                    if (restantes != null && restantes > 0) {
+                    // Intentos 1 y 2 (restantes = 4 o 3): solo mostrar "Usuario o contraseña incorrectos."
+                    // Intentos 3 y 4 (restantes = 2 o 1): advertir los intentos restantes antes del bloqueo
+                    if (restantes != null && restantes > 0 && restantes <= 2) {
                         yield "Usuario o contraseña incorrectos. Te queda" + (restantes == 1 ? " 1 intento" : "n " + restantes + " intentos") + " antes de que tu cuenta sea bloqueada por 24 horas.";
                     }
                     yield "Usuario o contraseña incorrectos.";
@@ -138,7 +148,7 @@ public class LoginController {
     // Si 2FA está activo genera OTP; si está inactivo da paso directo.
     // ─────────────────────────────────────────────────────────────
     @PostMapping("/login/otp-redirect")
-    public String otpRedirect(HttpSession session, HttpServletRequest request) {
+    public String otpRedirect(HttpSession session) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
 
@@ -152,7 +162,7 @@ public class LoginController {
         }
 
         // Reiniciar intentos fallidos tras login exitoso
-        loginAttemptService.registrarExito(usuario.getUsuario(), extraerIp(request));
+        loginAttemptService.registrarExito(usuario.getUsuario(), null);
 
         // Si la doble autenticación (2FA) está desactivada: entrar directo sin OTP
         if (!twoFactorAuthEnabled) {
@@ -185,7 +195,7 @@ public class LoginController {
         // Invalidar la autenticación de Spring Security hasta que pase el OTP
         SecurityContextHolder.clearContext();
         session.removeAttribute(
-                org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
+                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
 
         return "redirect:/verificar-otp";
     }
@@ -204,17 +214,20 @@ public class LoginController {
         }
 
         UsuarioEntity usuario = usuarioService.buscarPorId(usuarioId).orElse(null);
-        if (usuario == null)
+        if (usuario == null) {
             return "redirect:/login";
+        }
 
         // Enmascarar email: usuario@gmail.com → us****@gmail.com
         String emailMasked = enmascararEmail(usuario.getEmail());
         model.addAttribute("emailMasked", emailMasked);
 
-        if (error != null)
+        if (error != null) {
             model.addAttribute("errorMsg", "Código incorrecto o expirado. Inténtalo de nuevo.");
-        if (reenvio != null)
+        }
+        if (reenvio != null) {
             model.addAttribute("reenvioMsg", "Se envió un nuevo código a tu email.");
+        }
 
         return "verificar-otp";
     }
@@ -225,19 +238,22 @@ public class LoginController {
     @PostMapping("/verificar-otp")
     public String verificarOtp(@RequestParam("codigo") String codigo,
                                HttpSession session,
-                               HttpServletRequest request,
                                RedirectAttributes redirectAttrs) {
 
         Integer usuarioId = (Integer) session.getAttribute("otp_usuario_id");
-        if (usuarioId == null)
+        if (usuarioId == null) {
             return "redirect:/login";
+        }
 
         UsuarioEntity usuario = usuarioService.buscarPorId(usuarioId).orElse(null);
-        if (usuario == null)
+        if (usuario == null) {
             return "redirect:/login";
+        }
 
         if (otpService.validarOtp(usuario, codigo.trim())) {
-            loginAttemptService.registrarExito(usuario.getUsuario(), extraerIp(request));
+            // Reiniciar intentos fallidos tras validar OTP exitosamente
+            loginAttemptService.registrarExito(usuario.getUsuario(), null);
+
             // OTP correcto: marcar sesión como completamente verificada
             session.setAttribute("otp_verificado", true);
             session.setAttribute("usuario_autenticado_id", usuarioId);
@@ -245,16 +261,16 @@ public class LoginController {
             session.setAttribute("usuario_autenticado_nombre", usuario.getNombres());
 
             // Restaurar contexto de Spring Security para autorizaciones y roles
-            var authorities = java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority(
-                    "ROLE_" + usuario.getRol().name()));
-            var authToken = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                    usuario.getUsuario(), null, authorities);
-            var sc = SecurityContextHolder.createEmptyContext();
+            List<SimpleGrantedAuthority> authorities = List.of(
+                    new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name())
+            );
+            UsernamePasswordAuthenticationToken authToken =
+                    new UsernamePasswordAuthenticationToken(usuario.getUsuario(), null, authorities);
+
+            SecurityContext sc = SecurityContextHolder.createEmptyContext();
             sc.setAuthentication(authToken);
             SecurityContextHolder.setContext(sc);
-            session.setAttribute(
-                    org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-                    sc);
+            session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, sc);
 
             // Redirigir según rol
             return switch (usuario.getRol()) {
@@ -273,12 +289,14 @@ public class LoginController {
     @PostMapping("/reenviar-otp")
     public String reenviarOtp(HttpSession session) {
         Integer usuarioId = (Integer) session.getAttribute("otp_usuario_id");
-        if (usuarioId == null)
+        if (usuarioId == null) {
             return "redirect:/login";
+        }
 
         UsuarioEntity usuario = usuarioService.buscarPorId(usuarioId).orElse(null);
-        if (usuario == null)
+        if (usuario == null) {
             return "redirect:/login";
+        }
 
         otpService.generarYEnviarOtp(usuario);
 
@@ -290,19 +308,13 @@ public class LoginController {
     // Ej: junior@gmail.com → ju****@gmail.com
     // ─────────────────────────────────────────────────────────────
     private String enmascararEmail(String email) {
+        if (email == null) return "";
         int atIndex = email.indexOf('@');
-        if (atIndex <= 2)
+        if (atIndex <= 2) {
             return email;
+        }
         String visible = email.substring(0, 2);
         String dominio = email.substring(atIndex);
         return visible + "****" + dominio;
-    }
-
-    private String extraerIp(HttpServletRequest request) {
-        String xf = request.getHeader("X-Forwarded-For");
-        if (xf != null && !xf.isBlank() && !"unknown".equalsIgnoreCase(xf)) {
-            return xf.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
     }
 }
