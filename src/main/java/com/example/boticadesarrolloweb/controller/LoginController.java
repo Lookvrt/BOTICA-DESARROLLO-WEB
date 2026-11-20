@@ -85,7 +85,7 @@ public class LoginController {
         if (denied != null) {
             model.addAttribute("errorMsg", "Su cuenta no tiene permisos para acceder a esta sección del sistema.");
         }
-        if (error != null) {
+        if (error != null && !error.isBlank() && !"false".equalsIgnoreCase(error)) {
             String mensaje = switch (error.toLowerCase()) {
                 case "oauth2_unregistered" ->
                         "Su correo de Google no está registrado en el sistema. Solicite al administrador que cree su cuenta.";
@@ -103,7 +103,7 @@ public class LoginController {
                         "Acceso bloqueado temporalmente por 24 horas debido a múltiples intentos fallidos desde este dispositivo.";
                 case "disabled" ->
                         "Su cuenta se encuentra inactiva. Contacte al administrador.";
-                case "bad_credentials" -> {
+                case "bad_credentials", "true" -> {
                     // Intentos 1 y 2 (restantes = 4 o 3): solo mostrar "Usuario o contraseña incorrectos."
                     // Intentos 3 y 4 (restantes = 2 o 1): advertir los intentos restantes antes del bloqueo
                     if (restantes != null && restantes > 0 && restantes <= 2) {
@@ -111,9 +111,11 @@ public class LoginController {
                     }
                     yield "Usuario o contraseña incorrectos.";
                 }
-                default -> "Usuario o contraseña incorrectos.";
+                default -> null;
             };
-            model.addAttribute("errorMsg", mensaje);
+            if (mensaje != null) {
+                model.addAttribute("errorMsg", mensaje);
+            }
         }
         if (logout != null) {
             model.addAttribute("logoutMsg", "Sesión cerrada correctamente.");
