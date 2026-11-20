@@ -14,6 +14,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
+
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,13 +34,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Prueba el flujo HTTP real del formulario de compras (binding de detalles[i].*, CSRF, vistas).
- * Usa el bypass de desarrollo para autenticarse como "admin" (MockMvc llama desde 127.0.0.1).
+ * Se autentica como "admin" con spring-security-test (user(...)); el login real y el OTP no se usan aquí.
  * @Transactional: todo lo que se guarda se deshace al terminar cada test.
  */
-@SpringBootTest(properties = "app.security.dev-bypass=true")
+@SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
 class ComprasControllerTest {
+
+    /** Usuario "admin" (creado por DataInitializer) autenticado como ADMINISTRADOR. */
+    private static final RequestPostProcessor ADMIN = user("admin").roles("ADMINISTRADOR");
 
     private static final Pattern CSRF = Pattern.compile("name=\"_csrf\"\\s+value=\"([^\"]+)\"");
 
@@ -55,7 +61,7 @@ class ComprasControllerTest {
     @BeforeEach
     void abrirSesion() throws Exception {
         session = new MockHttpSession();
-        String html = mvc.perform(get("/compras").session(session))
+        String html = mvc.perform(get("/compras").session(session).with(ADMIN))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         Matcher m = CSRF.matcher(html);
@@ -66,7 +72,7 @@ class ComprasControllerTest {
     private MockHttpServletRequestBuilder formularioCompra() {
         var proveedor = proveedorRepository.findAll().stream().findFirst();
         assumeTrue(proveedor.isPresent(), "No hay proveedores para probar");
-        return post("/compras/guardar").session(session)
+        return post("/compras/guardar").session(session).with(ADMIN)
                 .param("_csrf", csrf)
                 .param("idProveedor", proveedor.get().getIdProveedor().toString())
                 .param("idUsuario", usuarioRepository.findByUsuario("admin").orElseThrow().getIdUsuario().toString())
@@ -81,7 +87,7 @@ class ComprasControllerTest {
         var item = alertas.get(0);
         int sugerida = 2 * item.getProducto().getStockMinimo() - item.getStockTotal();
 
-        mvc.perform(get("/compras").param("alerta", item.getProducto().getIdProducto().toString()).session(session))
+        mvc.perform(get("/compras").param("alerta", item.getProducto().getIdProducto().toString()).session(session).with(ADMIN))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("modalAbrir", "nuevo"))
                 .andExpect(content().string(containsString("data-abrir=\"true\"")))
@@ -131,7 +137,7 @@ class ComprasControllerTest {
                 .filter(c -> "F001-TEST".equals(c.getNumeroComprobante()))
                 .map(c -> c.getIdCompra()).max(Integer::compareTo).orElseThrow();
 
-        String html = mvc.perform(get("/compras/editar/" + idCompra).session(session))
+        String html = mvc.perform(get("/compras/editar/" + idCompra).session(session).with(ADMIN))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("modalAbrir", "editar"))
                 .andReturn().getResponse().getContentAsString();

@@ -14,6 +14,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
+
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.regex.Matcher;
@@ -29,12 +32,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Flujo HTTP real de Clientes y Ventas (formularios, binding, CSRF, vistas).
- * Usa el bypass de desarrollo como "admin" y hace ROLLBACK de todo al terminar.
+ * Se autentica como "admin" con spring-security-test (user(...)) y hace ROLLBACK de todo al terminar.
  */
-@SpringBootTest(properties = "app.security.dev-bypass=true")
+@SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
 class VentasClientesControllerTest {
+
+    /** Usuario "admin" (creado por DataInitializer) autenticado como ADMINISTRADOR. */
+    private static final RequestPostProcessor ADMIN = user("admin").roles("ADMINISTRADOR");
 
     private static final Pattern CSRF = Pattern.compile("name=\"_csrf\"\\s+value=\"([^\"]+)\"");
 
@@ -50,7 +56,7 @@ class VentasClientesControllerTest {
     @BeforeEach
     void abrirSesion() throws Exception {
         session = new MockHttpSession();
-        String html = mvc.perform(get("/ventas").session(session))
+        String html = mvc.perform(get("/ventas").session(session).with(ADMIN))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Gestión de Ventas")))
                 .andReturn().getResponse().getContentAsString();
@@ -62,7 +68,7 @@ class VentasClientesControllerTest {
     @Test
     void registraClienteConRucValido() throws Exception {
         String ruc = rucDePrueba();
-        mvc.perform(post("/clientes/guardar").session(session).param("_csrf", csrf)
+        mvc.perform(post("/clientes/guardar").session(session).with(ADMIN).param("_csrf", csrf)
                         .param("ruc", ruc).param("razonSocial", "Clínica de Prueba S.A.C.").param("estado", "1"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/clientes"));
@@ -71,7 +77,7 @@ class VentasClientesControllerTest {
 
     @Test
     void rechazaClienteConRucInvalido() throws Exception {
-        mvc.perform(post("/clientes/guardar").session(session).param("_csrf", csrf)
+        mvc.perform(post("/clientes/guardar").session(session).with(ADMIN).param("_csrf", csrf)
                         .param("ruc", "20100070971").param("razonSocial", "Empresa X").param("estado", "1"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("clientes"))
@@ -86,7 +92,7 @@ class VentasClientesControllerTest {
         assumeTrue(p != null, "No hay productos con stock");
         ClienteEntity c = clienteService.guardar(Cliente.builder().ruc(rucDePrueba()).razonSocial("Cliente Factura SAC").build());
 
-        mvc.perform(post("/ventas/guardar").session(session).param("_csrf", csrf)
+        mvc.perform(post("/ventas/guardar").session(session).with(ADMIN).param("_csrf", csrf)
                         .param("idCliente", c.getIdCliente().toString())
                         .param("metodoPago", "TRANSFERENCIA")
                         .param("detalles[0].idProducto", p.idProducto().toString())
@@ -98,7 +104,7 @@ class VentasClientesControllerTest {
                 .filter(v -> v.getCliente() != null && v.getCliente().getIdCliente().equals(c.getIdCliente()))
                 .map(v -> v.getIdVenta()).findFirst().orElseThrow();
 
-        String html = mvc.perform(get("/ventas/editar/" + idVenta).session(session))
+        String html = mvc.perform(get("/ventas/editar/" + idVenta).session(session).with(ADMIN))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("modalAbrir", "editar"))
                 .andReturn().getResponse().getContentAsString();
@@ -107,7 +113,7 @@ class VentasClientesControllerTest {
         assertTrue(html.contains(p.nombre()));
 
         // El listado muestra la factura con su cliente
-        mvc.perform(get("/ventas").param("q", c.getRuc()).session(session))
+        mvc.perform(get("/ventas").param("q", c.getRuc()).session(session).with(ADMIN))
                 .andExpect(content().string(containsString("Cliente Factura SAC")));
     }
 
@@ -115,7 +121,7 @@ class VentasClientesControllerTest {
     void facturaSinClienteVuelveAlModalConElError() throws Exception {
         ProductoVenta p = puntoVentaService.buscarProductos("a").stream().filter(x -> x.stock() >= 1).findFirst().orElse(null);
         assumeTrue(p != null, "No hay productos con stock");
-        mvc.perform(post("/ventas/guardar").session(session).param("_csrf", csrf)
+        mvc.perform(post("/ventas/guardar").session(session).with(ADMIN).param("_csrf", csrf)
                         .param("metodoPago", "EFECTIVO")
                         .param("detalles[0].idProducto", p.idProducto().toString())
                         .param("detalles[0].cantidad", "1"))
@@ -128,7 +134,7 @@ class VentasClientesControllerTest {
 
     @Test
     void paginaDeClientesCarga() throws Exception {
-        mvc.perform(get("/clientes").session(session))
+        mvc.perform(get("/clientes").session(session).with(ADMIN))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Gestión de Clientes")));
     }
