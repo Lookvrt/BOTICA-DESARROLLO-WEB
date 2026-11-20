@@ -25,7 +25,8 @@ public class VentaEntity {
     @JoinColumn(name = "id_usuario", nullable = false)
     private UsuarioEntity usuario;
 
-    @Column(name = "fecha_venta", nullable = false, insertable = false, updatable = false)
+    // La columna en la BD no tiene DEFAULT, así que la fecha se asigna al insertar (ver @PrePersist)
+    @Column(name = "fecha_venta", nullable = false, updatable = false)
     private LocalDateTime fechaVenta;
 
     @Column(name = "tipo_comprobante", length = 30)
@@ -47,4 +48,11 @@ public class VentaEntity {
     @Column(name = "estado", nullable = false)
     @Builder.Default
     private EstadoVenta estado = EstadoVenta.REGISTRADA;
+
+    @PrePersist
+    void asignarFechaVenta() {
+        if (fechaVenta == null) {
+            fechaVenta = LocalDateTime.now();
+        }
+    }
 }

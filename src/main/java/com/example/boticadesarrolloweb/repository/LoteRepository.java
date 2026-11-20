@@ -1,7 +1,9 @@
 package com.example.boticadesarrolloweb.repository;
 
 import com.example.boticadesarrolloweb.entity.LoteEntity;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -23,4 +25,16 @@ public interface LoteRepository extends JpaRepository<LoteEntity, Integer> {
     List<LoteEntity> findByFechaVencimientoBeforeOrderByFechaVencimientoAsc(LocalDate fecha);
 
     boolean existsByProductoIdProductoAndNumeroLoteIgnoreCase(Integer idProducto, String numeroLote);
+
+    // ── Punto de venta: solo lotes con stock y no vencidos (orden FEFO) ──
+
+    @Query("SELECT COALESCE(SUM(l.stockActual), 0) FROM LoteEntity l " +
+            "WHERE l.producto.idProducto = :idProducto AND l.stockActual > 0 AND l.fechaVencimiento >= :hoy")
+    Integer sumStockVendible(@Param("idProducto") Integer idProducto, @Param("hoy") LocalDate hoy);
+
+    /** Bloquea los lotes (SELECT ... FOR UPDATE) para que dos ventas simultáneas no vendan el mismo stock. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT l FROM LoteEntity l WHERE l.producto.idProducto = :idProducto " +
+            "AND l.stockActual > 0 AND l.fechaVencimiento >= :hoy ORDER BY l.fechaVencimiento ASC, l.idLote ASC")
+    List<LoteEntity> findLotesVendiblesParaVenta(@Param("idProducto") Integer idProducto, @Param("hoy") LocalDate hoy);
 }

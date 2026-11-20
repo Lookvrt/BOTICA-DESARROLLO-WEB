@@ -1,6 +1,8 @@
 package com.example.boticadesarrolloweb.security;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -8,7 +10,9 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 
+@Slf4j
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -20,8 +24,17 @@ public class SecurityConfig {
     private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
     private final CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
 
+    // SOLO DESARROLLO: activar con --app.security.dev-bypass=true (ver DevAuthBypassFilter)
+    @Value("${app.security.dev-bypass:false}")
+    private boolean devBypass;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        if (devBypass) {
+            log.warn("⚠️⚠️⚠️ DEV BYPASS ACTIVO: login y OTP desactivados para peticiones desde localhost. NO usar en producción.");
+            http.addFilterBefore(new DevAuthBypassFilter(), AnonymousAuthenticationFilter.class);
+        }
+
         http
                 .authorizeHttpRequests(auth -> auth
                         // 1. Recursos estáticos y rutas públicas

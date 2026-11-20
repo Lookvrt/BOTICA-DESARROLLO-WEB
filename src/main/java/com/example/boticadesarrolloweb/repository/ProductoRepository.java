@@ -1,6 +1,7 @@
 package com.example.boticadesarrolloweb.repository;
 
 import com.example.boticadesarrolloweb.entity.ProductoEntity;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,6 +21,14 @@ public interface ProductoRepository extends JpaRepository<ProductoEntity, Intege
             "ORDER BY p.idProducto DESC")
     List<ProductoEntity> buscarPorNombreYCategoria(@Param("query") String query,
                                                    @Param("idCategoria") Integer idCategoria);
+
+    // Punto de venta: busca por nombre, código o principio activo
+    @Query("SELECT p FROM ProductoEntity p WHERE " +
+            "LOWER(p.nombre) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
+            "LOWER(p.codigo) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
+            "LOWER(p.principioActivo) LIKE LOWER(CONCAT('%', :q, '%')) " +
+            "ORDER BY p.nombre ASC")
+    List<ProductoEntity> buscarParaVenta(@Param("q") String q, Pageable pageable);
 
     @Query("SELECT p FROM ProductoEntity p LEFT JOIN FETCH p.categoria ORDER BY p.idProducto DESC")
     List<ProductoEntity> findAllConCategoria();
