@@ -2,8 +2,15 @@ package com.example.boticadesarrolloweb.model;
 
 import jakarta.validation.constraints.*;
 import lombok.*;
-import java.math.BigDecimal;
+import org.springframework.format.annotation.DateTimeFormat;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+/**
+ * Línea de una compra en el formulario. Al registrarse, cada línea crea un lote nuevo
+ * del producto (numeroLote + fechaVencimiento) con la cantidad comprada.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,7 +24,7 @@ public class DetalleCompra {
     @NotNull(message = "Debe seleccionar un producto")
     private Integer idProducto;
 
-    @NotNull(message = "Debe asociar un lote al detalle")
+    /** Lote generado al registrar la compra (no se envía desde el formulario). */
     private Integer idLote;
 
     @NotNull(message = "La cantidad es obligatoria")
@@ -29,4 +36,21 @@ public class DetalleCompra {
     private BigDecimal precioUnitario;
 
     private BigDecimal subtotal;
+
+    /** Opcional: si se deja vacío se genera automáticamente. */
+    @Size(max = 50, message = "El número de lote no debe superar 50 caracteres")
+    private String numeroLote;
+
+    @NotNull(message = "La fecha de vencimiento es obligatoria")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate fechaVencimiento;
+
+    // ── Datos de apoyo para la vista (no se guardan) ──
+    private String codigoProducto;
+    private String nombreProducto;
+    private Integer stockActual;
+    private Integer stockMinimo;
+
+    /** Cantidad mínima exigida (p. ej. productos que vienen de Alertas: stock mínimo + 1). */
+    private Integer cantidadMinima;
 }

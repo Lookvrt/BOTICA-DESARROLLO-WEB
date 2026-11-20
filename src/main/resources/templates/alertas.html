@@ -29,16 +29,9 @@
                 </div>
 
                 <div class="col-12 col-md-8 col-lg-7 d-flex flex-wrap gap-2 justify-content-md-end align-items-center">
-                    <button class="btn bg-secondary bg-opacity-10 border-0 text-dark d-flex align-items-center gap-2 px-3 fw-medium">
-                        <i class="bi bi-filter"></i> Filtrar
-                    </button>
-                    <button class="btn bg-danger bg-opacity-50 border-0 text-dark d-flex align-items-center gap-2 px-3 fw-medium">
-                        <i class="bi bi-file-earmark-pdf-fill text-danger"></i> PDF
-                    </button>
-                    <button class="btn bg-success bg-opacity-50 border-0 text-dark d-flex align-items-center gap-2 px-3 fw-medium">
-                        <i class="bi bi-file-earmark-excel-fill text-success"></i> Excel
-                    </button>
-                    <button class="btn bg-primary bg-opacity-25 border-0 text-dark d-flex align-items-center gap-2 px-3 fw-medium">
+                    <button type="button" id="btn-orden-todos" th:disabled="${#lists.isEmpty(items)}"
+                            class="btn bg-primary bg-opacity-25 border-0 text-dark d-flex align-items-center gap-2 px-3 fw-medium"
+                            title="Abre una nueva compra en Compras con todos los productos de la tabla">
                         <i class="bi bi-box-arrow-up-right"></i> Orden de compra para todos
                     </button>
                 </div>
@@ -59,7 +52,7 @@
                     </thead>
                     <tbody class="text-center" id="tabla-alertas">
                     <tr class="border-bottom fila-alerta" th:each="item : ${items}"
-                        th:attr="data-busqueda=${#strings.toLowerCase(item.producto.codigo + ' ' + item.producto.nombre + ' ' + (item.producto.principioActivo ?: ''))}">
+                        th:attr="data-id=${item.producto.idProducto},data-busqueda=${#strings.toLowerCase(item.producto.codigo + ' ' + item.producto.nombre + ' ' + (item.producto.principioActivo ?: ''))}">
                         <td class="py-3 text-start" th:text="${item.producto.codigo}">MED002</td>
                         <td class="text-start" th:text="${item.producto.nombre}">Amoxicilina 500mg x12</td>
                         <td th:text="${item.producto.principioActivo ?: '-'}">Amoxicilina</td>
@@ -68,7 +61,8 @@
                         <td th:text="${item.producto.stockMinimo}">20</td>
                         <td class="text-danger fw-medium" th:text="${item.producto.stockMinimo - item.stockTotal}">15</td>
                         <td class="text-end">
-                            <a th:href="@{/compras}"
+                            <a th:href="@{/compras(alerta=${item.producto.idProducto})}"
+                               title="Abre una nueva compra en Compras con este producto"
                                class="btn btn-sm bg-danger text-white bg-opacity-75 fw-medium border-0 px-3 py-2 rounded-2">
                                 Orden Compra
                             </a>
@@ -104,6 +98,15 @@
         });
         const total = document.querySelectorAll('.fila-alerta').length;
         document.getElementById('sin-resultados').classList.toggle('d-none', total === 0 || visibles > 0);
+        document.getElementById('btn-orden-todos').disabled = visibles === 0;
+    });
+
+    // "Orden de compra para todos": lleva a Compras con los productos visibles en la tabla
+    document.getElementById('btn-orden-todos').addEventListener('click', function () {
+        const ids = [...document.querySelectorAll('.fila-alerta:not(.d-none)')].map(f => f.dataset.id);
+        if (ids.length > 0) {
+            window.location.href = '/compras?alerta=' + ids.join(',');
+        }
     });
 </script>
 </body>

@@ -2,19 +2,23 @@ package com.example.boticadesarrolloweb.controller;
 
 import com.example.boticadesarrolloweb.entity.CompraEntity;
 import com.example.boticadesarrolloweb.model.Compra;
+import com.example.boticadesarrolloweb.model.DetalleCompra;
 import com.example.boticadesarrolloweb.service.CompraService;
+import com.example.boticadesarrolloweb.service.CompraService.CompraException;
+import com.example.boticadesarrolloweb.service.CompraService.ProductoCompra;
 import com.example.boticadesarrolloweb.service.ProveedorService;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
+@Slf4j
 @Controller
 public class ComprasController {
 
@@ -34,14 +38,32 @@ public class ComprasController {
         model.addAttribute("usuarios", compraService.listarUsuarios());
     }
 
+    /**
+     * Listado de compras. Con ?alerta=1,2,3 (desde el módulo de Alertas) abre el modal de
+     * nueva compra con esos productos precargados.
+     */
     @GetMapping("/compras")
     public String compras(
             @RequestParam(name = "q", required = false) String query,
             @RequestParam(name = "orden", required = false, defaultValue = "asc") String orden,
+            @RequestParam(name = "alerta", required = false) List<Integer> idsAlerta,
+            HttpSession session,
             Model model) {
 
         if (!model.containsAttribute("compra")) {
-            model.addAttribute("compra", new Compra());
+            Compra compra = new Compra();
+            if (session.getAttribute("usuario_autenticado_id") instanceof Integer idUsuario) {
+                compra.setIdUsuario(idUsuario);
+            }
+            if (idsAlerta != null && !idsAlerta.isEmpty()) {
+                List<DetalleCompra> detalles = compraService.detallesDesdeAlertas(idsAlerta);
+                compra.setDetalles(detalles);
+                model.addAttribute("modalAbrir", "nuevo");
+                if (detalles.isEmpty()) {
+                    model.addAttribute("error", "Los productos seleccionados ya no están por debajo de su stock mínimo.");
+                }
+            }
+            model.addAttribute("compra", compra);
         }
 
         cargarListas(model, query, orden);
@@ -51,28 +73,44 @@ public class ComprasController {
         return "compras";
     }
 
+    @GetMapping("/compras/api/productos")
+    @ResponseBody
+    public List<ProductoCompra> buscarProductos(@RequestParam(name = "q", required = false) String q) {
+        return compraService.buscarProductos(q);
+    }
+
     @PostMapping("/compras/guardar")
     public String guardar(
             @Valid @ModelAttribute("compra") Compra compra, BindingResult resultado, Model model, RedirectAttributes redirectAttributes) {
 
         if (resultado.hasErrors()) {
-            cargarListas(model, null, "asc");
-            model.addAttribute("modalAbrir", compra.getIdCompra() == null ? "nuevo" : "editar");
-            model.addAttribute("error", "Revisa los datos ingresados en el formulario.");
-
-            return "compras";
+            return volverAlFormulario(compra, model, "Revisa los datos ingresados en el formulario.");
         }
 
         try {
-            compraService.guardarCompra(compra);
-            redirectAttributes.addFlashAttribute(
-                    "mensaje", "Compra guardada correctamente.");
+            CompraEntity guardada = compraService.guardarCompra(compra);
+            redirectAttributes.addFlashAttribute("mensaje", compra.getIdCompra() == null
+                    ? "Compra CMP-" + String.format("%03d", guardada.getIdCompra()) + " registrada: "
+                      + compra.getDetalles().size() + " producto(s) ingresaron al inventario."
+                    : "Compra actualizada correctamente.");
+        } catch (CompraException e) {
+            return volverAlFormulario(compra, model, e.getMessage());
         } catch (RuntimeException e) {
+            log.error("Error al guardar compra", e);
             redirectAttributes.addFlashAttribute(
                     "error", "No se pudo guardar la compra. Verifica los datos.");
         }
 
         return "redirect:/compras";
+    }
+
+    /** Vuelve a mostrar el modal con los datos ingresados (sin perder los productos agregados). */
+    private String volverAlFormulario(Compra compra, Model model, String error) {
+        compraService.completarDatosVista(compra);
+        cargarListas(model, null, "asc");
+        model.addAttribute("modalAbrir", compra.getIdCompra() == null ? "nuevo" : "editar");
+        model.addAttribute("error", error);
+        return "compras";
     }
 
     @GetMapping("/compras/editar/{id}")
@@ -115,7 +153,7 @@ public class ComprasController {
         try {
             compraService.anularCompra(id);
             redirectAttributes.addFlashAttribute(
-                    "mensaje", "Compra anulada correctamente.");
+                    "mensaje", "Compra anulada correctamente. Su stock fue retirado del inventario.");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute(
                     "error", "No se pudo anular la compra: " + e.getMessage());
