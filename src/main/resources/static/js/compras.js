@@ -1,37 +1,24 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const modalNuevo = document.getElementById('modalNuevaCompra');
-    const modalEditar = document.getElementById('modalEditarCompra');
+    const modalCompra = document.getElementById('modalNuevaCompra');
     const modalEliminar = document.getElementById('modalEliminarCompra');
 
-    // Apertura automática si hay errores de validación
-    if (modalNuevo && modalNuevo.dataset.abrir === 'true') {
-        bootstrap.Modal.getOrCreateInstance(modalNuevo).show();
+    // Apertura automática: desde Alertas, al editar (/compras/editar/{id}) o tras un error de validación.
+    // "#nueva" en la URL abre el modal vacío (lo usa el botón Nueva Compra estando en modo edición).
+    if (modalCompra && (modalCompra.dataset.abrir === 'true' || location.hash === '#nueva')) {
+        bootstrap.Modal.getOrCreateInstance(modalCompra).show();
     }
 
-    if (modalEditar && modalEditar.dataset.abrir === 'true') {
-        bootstrap.Modal.getOrCreateInstance(modalEditar).show();
-    }
-
-    // Modal Editar
-    document.querySelectorAll('.btn-editar-compra').forEach(button => {
-        button.addEventListener('click', function () {
-            const id = this.getAttribute('data-id');
-            const proveedor = this.getAttribute('data-proveedor');
-            const usuario = this.getAttribute('data-usuario');
-            const tipoComprobante = this.getAttribute('data-tipocomprobante');
-            const numeroComprobante = this.getAttribute('data-numerocomprobante');
-            const total = this.getAttribute('data-total');
-
-            document.getElementById('edit-idCompra').value = id || '';
-            document.getElementById('edit-idProveedor').value = proveedor || '';
-            document.getElementById('edit-idUsuario').value = usuario || '';
-            document.getElementById('edit-tipoComprobante').value = tipoComprobante || '';
-            document.getElementById('edit-numeroComprobante').value = numeroComprobante || '';
-            document.getElementById('edit-total').value = total || '';
-
-            bootstrap.Modal.getOrCreateInstance(modalEditar).show();
+    // Nueva Compra: si el formulario está cargado con una compra en edición, se recarga uno vacío
+    const btnNuevaCompra = document.getElementById('btn-nueva-compra');
+    if (btnNuevaCompra) {
+        btnNuevaCompra.addEventListener('click', () => {
+            if (modalCompra.dataset.edicion === 'true') {
+                window.location.href = '/compras#nueva';
+            } else {
+                bootstrap.Modal.getOrCreateInstance(modalCompra).show();
+            }
         });
-    });
+    }
 
     // Modal Anular
     document.querySelectorAll('.btn-eliminar-compra').forEach(button => {
@@ -79,6 +66,10 @@ function inicializarDetalleCompra() {
     const resultados = document.getElementById('resultados-producto-compra');
     const totalCompra = document.getElementById('total-compra');
     const errorDetalle = document.getElementById('error-detalle-compra');
+    // Solo existe al editar una compra antigua registrada sin productos
+    const bloqueTotalManual = document.getElementById('bloque-total-manual');
+    const totalManual = document.getElementById('total-manual');
+    const bloqueTotalCalculado = document.getElementById('bloque-total-calculado');
 
     const escapar = (s) => String(s ?? '').replace(/[&<>"']/g, c =>
         ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
@@ -102,6 +93,11 @@ function inicializarDetalleCompra() {
         });
         totalCompra.textContent = 'S/ ' + total.toFixed(2);
         filaVacia.classList.toggle('d-none', filas().length > 0);
+        if (bloqueTotalManual) {
+            const sinFilas = filas().length === 0;
+            bloqueTotalManual.classList.toggle('d-none', !sinFilas);
+            bloqueTotalCalculado.classList.toggle('invisible', sinFilas);
+        }
     }
 
     // Asigna los nombres detalles[i].campo que Spring necesita para armar la lista
@@ -125,7 +121,7 @@ function inicializarDetalleCompra() {
         fila.dataset.id = p.idProducto;
         fila.innerHTML = `
             <td class="ps-3">
-                <div class="fw-semibold">${escapar(p.nombre)}</div>
+                <div class="fw-semibold nombre-detalle">${escapar(p.nombre)}</div>
                 <div class="small text-secondary">${escapar(p.codigo)}</div>
                 <input type="hidden" data-campo="idProducto" value="${p.idProducto}">
             </td>
@@ -243,23 +239,37 @@ function inicializarDetalleCompra() {
         }
 
         const errores = [];
-        if (filas().length === 0) errores.push('Agrega al menos un producto a la compra.');
+        if (filas().length === 0) {
+            if (!bloqueTotalManual) {
+                errores.push('Agrega al menos un producto a la compra.');
+            } else if (!(parseFloat(totalManual.value) > 0)) {
+                errores.push('Ingresa el monto total o agrega productos a la compra.');
+            }
+        }
 
         filas().forEach(fila => {
-            const nombre = fila.querySelector('.fw-semibold').textContent;
+            const nombre = fila.querySelector('.nombre-detalle').textContent;
             const cantidad = parseInt(fila.querySelector('[data-campo="cantidad"]').value, 10);
             const minimo = parseInt(fila.dataset.min, 10);
+            const vendida = parseInt(fila.dataset.vendida, 10) || 0;
             const precio = parseFloat(fila.querySelector('[data-campo="precioUnitario"]').value);
-            const venc = fila.querySelector('[data-campo="fechaVencimiento"]').value;
+            const inputVenc = fila.querySelector('[data-campo="fechaVencimiento"]');
+            const venc = inputVenc.value;
 
             if (!cantidad || cantidad < 1) {
                 errores.push(`${nombre}: ingresa una cantidad válida.`);
             } else if (!isNaN(minimo) && cantidad < minimo) {
                 errores.push(`${nombre}: la cantidad debe ser mayor a su stock mínimo (${minimo - 1}).`);
+            } else if (cantidad < vendida) {
+                errores.push(`${nombre}: la cantidad no puede ser menor a ${vendida} (unidades ya vendidas de este lote).`);
             }
             if (!precio || precio <= 0) errores.push(`${nombre}: ingresa el precio unitario.`);
-            if (!venc) errores.push(`${nombre}: ingresa la fecha de vencimiento.`);
-            else if (venc < fechaMinima) errores.push(`${nombre}: la fecha de vencimiento debe ser posterior a hoy.`);
+            if (!venc) {
+                errores.push(`${nombre}: ingresa la fecha de vencimiento.`);
+            } else if (venc < fechaMinima && venc !== inputVenc.defaultValue) {
+                // Un lote existente puede conservar su fecha original; una fecha nueva debe ser futura
+                errores.push(`${nombre}: la fecha de vencimiento debe ser posterior a hoy.`);
+            }
         });
 
         if (errores.length > 0) {
@@ -273,7 +283,11 @@ function inicializarDetalleCompra() {
         reindexar();
     });
 
-    // Filas precargadas (desde Alertas o tras un error del servidor)
-    filas().forEach(fila => fila.querySelector('[data-campo="fechaVencimiento"]').min = fechaMinima);
+    // Filas precargadas (desde Alertas, al editar o tras un error del servidor).
+    // En lotes existentes no se fuerza el mínimo de fecha para que puedan conservar la suya.
+    filas().forEach(fila => {
+        const venc = fila.querySelector('[data-campo="fechaVencimiento"]');
+        if (!venc.value) venc.min = fechaMinima;
+    });
     recalcular();
 }

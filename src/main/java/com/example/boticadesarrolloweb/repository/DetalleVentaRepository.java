@@ -5,4 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface DetalleVentaRepository extends JpaRepository<DetalleVentaEntity, Integer> {
 
+    boolean existsByLoteIdLote(Integer idLote);
 }

@@ -121,6 +121,80 @@ class CompraServiceTest {
     }
 
     @Test
+    void editarCompraAjustaElInventario() {
+        List<ProductoEntity> productos = productoRepository.findAll().stream().limit(3).toList();
+        assumeTrue(productos.size() == 3, "Se necesitan 3 productos");
+        ProductoEntity a = productos.get(0), b = productos.get(1), c = productos.get(2);
+        int stockA = loteRepository.sumStockByProductoId(a.getIdProducto());
+        int stockB = loteRepository.sumStockByProductoId(b.getIdProducto());
+        int stockC = loteRepository.sumStockByProductoId(c.getIdProducto());
+
+        CompraEntity creada = compraService.guardarCompra(cabecera(List.of(linea(a, 10, "1.00"), linea(b, 4, "1.00"))));
+        em.flush();
+        em.clear();
+
+        // Editar: A pasa de 10 a 6, se quita B y se agrega C x 5
+        Compra edicion = compraService.cargarParaEditar(creada.getIdCompra());
+        assertEquals(2, edicion.getDetalles().size());
+        DetalleCompra lineaA = edicion.getDetalles().stream()
+                .filter(d -> d.getIdProducto().equals(a.getIdProducto())).findFirst().orElseThrow();
+        lineaA.setCantidad(6);
+        lineaA.setPrecioUnitario(new BigDecimal("2.00"));
+        edicion.setDetalles(new ArrayList<>(List.of(lineaA, linea(c, 5, "3.00"))));
+
+        CompraEntity editada = compraService.guardarCompra(edicion);
+        em.flush();
+        em.clear();
+
+        assertEquals(0, new BigDecimal("27.00").compareTo(editada.getTotal())); // 6x2 + 5x3
+        assertEquals(stockA + 6, loteRepository.sumStockByProductoId(a.getIdProducto()));
+        assertEquals(stockB, loteRepository.sumStockByProductoId(b.getIdProducto()));
+        assertEquals(stockC + 5, loteRepository.sumStockByProductoId(c.getIdProducto()));
+        assertEquals(2, detalleCompraRepository.findByCompraConLote(creada.getIdCompra()).size());
+    }
+
+    @Test
+    void editarNoPermiteBajarNiQuitarLoQueYaSeVendio() {
+        ProductoEntity a = productoRepository.findAll().stream().findFirst().orElseThrow();
+        CompraEntity creada = compraService.guardarCompra(cabecera(List.of(linea(a, 10, "1.00"))));
+        em.flush();
+
+        // Simular que se vendieron 4 unidades del lote de la compra
+        var lote = detalleCompraRepository.findByCompraConLote(creada.getIdCompra()).get(0).getLote();
+        lote.setStockActual(6);
+        em.flush();
+        em.clear();
+
+        Compra edicion = compraService.cargarParaEditar(creada.getIdCompra());
+        assertEquals(4, edicion.getDetalles().get(0).getCantidadVendida());
+
+        edicion.getDetalles().get(0).setCantidad(3);
+        var ex = assertThrows(CompraService.CompraException.class, () -> compraService.guardarCompra(edicion));
+        assertTrue(ex.getMessage().contains("no puede ser menor a 4"));
+
+        Compra sinLinea = compraService.cargarParaEditar(creada.getIdCompra());
+        sinLinea.setDetalles(new ArrayList<>(List.of(linea(productoRepository.findAll().get(1), 2, "1.00"))));
+        var ex2 = assertThrows(CompraService.CompraException.class, () -> compraService.guardarCompra(sinLinea));
+        assertTrue(ex2.getMessage().contains("No se puede quitar"));
+    }
+
+    @Test
+    void compraAntiguaSinProductosConservaSuTotalManual() {
+        CompraEntity antigua = new CompraEntity();
+        var base = cabecera(List.of());
+        antigua.setProveedor(proveedorRepository.findById(base.getIdProveedor()).orElseThrow());
+        antigua.setUsuario(usuarioRepository.findById(base.getIdUsuario()).orElseThrow());
+        antigua.setTotal(new BigDecimal("50.00"));
+        antigua = em.merge(antigua);
+        em.flush();
+
+        assertTrue(compraService.esCompraSinProductos(antigua.getIdCompra()));
+        Compra edicion = compraService.cargarParaEditar(antigua.getIdCompra());
+        edicion.setTotal(new BigDecimal("75.50"));
+        assertEquals(0, new BigDecimal("75.50").compareTo(compraService.guardarCompra(edicion).getTotal()));
+    }
+
+    @Test
     void rechazaCompraSinProductos() {
         assertThrows(CompraService.CompraException.class,
                 () -> compraService.guardarCompra(cabecera(List.of())));

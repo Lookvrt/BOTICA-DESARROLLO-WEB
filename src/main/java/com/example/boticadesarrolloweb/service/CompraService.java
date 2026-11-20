@@ -22,6 +22,7 @@ public class CompraService {
 
     private final CompraRepository compraRepository;
     private final DetalleCompraRepository detalleCompraRepository;
+    private final DetalleVentaRepository detalleVentaRepository;
     private final ProveedorRepository proveedorRepository;
     private final UsuarioRepository usuarioRepository;
     private final ProductoRepository productoRepository;
@@ -31,6 +32,7 @@ public class CompraService {
     public CompraService(
             CompraRepository compraRepository,
             DetalleCompraRepository detalleCompraRepository,
+            DetalleVentaRepository detalleVentaRepository,
             ProveedorRepository proveedorRepository,
             UsuarioRepository usuarioRepository,
             ProductoRepository productoRepository,
@@ -38,6 +40,7 @@ public class CompraService {
             AlertaService alertaService) {
         this.compraRepository = compraRepository;
         this.detalleCompraRepository = detalleCompraRepository;
+        this.detalleVentaRepository = detalleVentaRepository;
         this.proveedorRepository = proveedorRepository;
         this.usuarioRepository = usuarioRepository;
         this.productoRepository = productoRepository;
@@ -134,13 +137,17 @@ public class CompraService {
                 d.setStockMinimo(p.getStockMinimo());
                 d.setStockActual(loteRepository.sumStockByProductoId(p.getIdProducto()));
             });
+            if (d.getIdDetalleCompra() != null) {
+                detalleCompraRepository.findById(d.getIdDetalleCompra())
+                        .ifPresent(det -> d.setCantidadVendida(vendidas(det.getLote())));
+            }
         }
     }
 
     @Transactional
     public CompraEntity guardarCompra(Compra compra) {
         if (compra.getIdCompra() != null) {
-            return actualizarCabecera(compra);
+            return actualizarCompra(compra);
         }
 
         List<DetalleCompra> detalles = compra.getDetalles() == null ? List.of()
@@ -155,63 +162,206 @@ public class CompraService {
         entidad.setTotal(BigDecimal.ZERO);
         entidad = compraRepository.save(entidad);
 
-        LocalDate hoy = LocalDate.now();
         Set<Integer> productosVistos = new HashSet<>();
         BigDecimal total = BigDecimal.ZERO;
-
         for (DetalleCompra d : detalles) {
-            ProductoEntity producto = productoRepository.findById(d.getIdProducto())
-                    .orElseThrow(() -> new CompraException("Uno de los productos ya no existe o fue eliminado."));
-
-            if (!productosVistos.add(producto.getIdProducto())) {
-                throw new CompraException("El producto \"" + producto.getNombre() + "\" está repetido en la compra.");
-            }
-            if (d.getCantidadMinima() != null && d.getCantidad() < d.getCantidadMinima()) {
-                throw new CompraException("La cantidad de \"" + producto.getNombre()
-                        + "\" debe ser mayor a su stock mínimo (" + (d.getCantidadMinima() - 1) + ").");
-            }
-            if (!d.getFechaVencimiento().isAfter(hoy)) {
-                throw new CompraException("La fecha de vencimiento de \"" + producto.getNombre() + "\" debe ser posterior a hoy.");
-            }
-
-            String numeroLote = resolverNumeroLote(producto, d.getNumeroLote(), hoy);
-
-            LoteEntity lote = loteRepository.save(LoteEntity.builder()
-                    .producto(producto)
-                    .numeroLote(numeroLote)
-                    .fechaFabricacion(null)
-                    .fechaVencimiento(d.getFechaVencimiento())
-                    .cantidadInicial(d.getCantidad())
-                    .stockActual(d.getCantidad())
-                    .precioCompra(d.getPrecioUnitario())
-                    .build());
-
-            BigDecimal subtotal = d.getPrecioUnitario().multiply(BigDecimal.valueOf(d.getCantidad()));
-            detalleCompraRepository.save(DetalleCompraEntity.builder()
-                    .compra(entidad)
-                    .producto(producto)
-                    .lote(lote)
-                    .cantidad(d.getCantidad())
-                    .precioUnitario(d.getPrecioUnitario())
-                    .subtotal(subtotal)
-                    .build());
-            total = total.add(subtotal);
+            total = total.add(crearLinea(entidad, d, productosVistos));
         }
 
         entidad.setTotal(total);
         return entidad;
     }
 
-    /** Edición: solo datos de cabecera. El total se edita solo en compras antiguas sin productos. */
-    private CompraEntity actualizarCabecera(Compra compra) {
+    /** Crea el lote y el detalle de una línea nueva de compra. Devuelve su subtotal. */
+    private BigDecimal crearLinea(CompraEntity compra, DetalleCompra d, Set<Integer> productosVistos) {
+        ProductoEntity producto = productoRepository.findById(d.getIdProducto())
+                .orElseThrow(() -> new CompraException("Uno de los productos ya no existe o fue eliminado."));
+        LocalDate hoy = LocalDate.now();
+
+        if (!productosVistos.add(producto.getIdProducto())) {
+            throw new CompraException("El producto \"" + producto.getNombre() + "\" está repetido en la compra.");
+        }
+        if (d.getCantidadMinima() != null && d.getCantidad() < d.getCantidadMinima()) {
+            throw new CompraException("La cantidad de \"" + producto.getNombre()
+                    + "\" debe ser mayor a su stock mínimo (" + (d.getCantidadMinima() - 1) + ").");
+        }
+        if (!d.getFechaVencimiento().isAfter(hoy)) {
+            throw new CompraException("La fecha de vencimiento de \"" + producto.getNombre() + "\" debe ser posterior a hoy.");
+        }
+
+        LoteEntity lote = loteRepository.save(LoteEntity.builder()
+                .producto(producto)
+                .numeroLote(resolverNumeroLote(producto, d.getNumeroLote(), hoy))
+                .fechaVencimiento(d.getFechaVencimiento())
+                .cantidadInicial(d.getCantidad())
+                .stockActual(d.getCantidad())
+                .precioCompra(d.getPrecioUnitario())
+                .build());
+
+        BigDecimal subtotal = d.getPrecioUnitario().multiply(BigDecimal.valueOf(d.getCantidad()));
+        detalleCompraRepository.save(DetalleCompraEntity.builder()
+                .compra(compra)
+                .producto(producto)
+                .lote(lote)
+                .cantidad(d.getCantidad())
+                .precioUnitario(d.getPrecioUnitario())
+                .subtotal(subtotal)
+                .build());
+        return subtotal;
+    }
+
+    /** true si la compra es antigua (registrada antes de que las compras tuvieran productos). */
+    @Transactional(readOnly = true)
+    public boolean esCompraSinProductos(Integer idCompra) {
+        return idCompra != null && !detalleCompraRepository.existsByCompraIdCompra(idCompra);
+    }
+
+    /** Carga una compra con sus productos para el modal de edición. */
+    @Transactional(readOnly = true)
+    public Compra cargarParaEditar(Integer id) {
+        CompraEntity entidad = buscarPorId(id);
+        if (entidad.getEstado() == EstadoCompra.ANULADA) {
+            throw new CompraException("No se puede editar una compra anulada.");
+        }
+        List<DetalleCompra> detalles = new ArrayList<>();
+        for (DetalleCompraEntity d : detalleCompraRepository.findByCompraConLote(id)) {
+            ProductoEntity p = d.getProducto();
+            LoteEntity lote = d.getLote();
+            detalles.add(DetalleCompra.builder()
+                    .idDetalleCompra(d.getIdDetalleCompra())
+                    .idProducto(p.getIdProducto())
+                    .idLote(lote.getIdLote())
+                    .codigoProducto(p.getCodigo())
+                    .nombreProducto(p.getNombre())
+                    .stockActual(loteRepository.sumStockByProductoId(p.getIdProducto()))
+                    .stockMinimo(p.getStockMinimo())
+                    .cantidad(d.getCantidad())
+                    .precioUnitario(d.getPrecioUnitario())
+                    .numeroLote(lote.getNumeroLote())
+                    .fechaVencimiento(lote.getFechaVencimiento())
+                    .cantidadVendida(vendidas(lote))
+                    .build());
+        }
+        return Compra.builder()
+                .idCompra(entidad.getIdCompra())
+                .idProveedor(entidad.getProveedor() != null ? entidad.getProveedor().getIdProveedor() : null)
+                .idUsuario(entidad.getUsuario() != null ? entidad.getUsuario().getIdUsuario() : null)
+                .fechaCompra(entidad.getFechaCompra())
+                .tipoComprobante(entidad.getTipoComprobante())
+                .numeroComprobante(entidad.getNumeroComprobante())
+                .total(entidad.getTotal())
+                .estado(entidad.getEstado())
+                .detalles(detalles)
+                .build();
+    }
+
+    private int vendidas(LoteEntity lote) {
+        return Math.max(0, lote.getCantidadInicial() - lote.getStockActual());
+    }
+
+    /**
+     * Edición de una compra: cabecera + productos. Ajusta el inventario:
+     * - línea existente: el lote pasa a la nueva cantidad (sin bajar de lo ya vendido);
+     * - línea quitada: su lote se retira del inventario (solo si no tiene ventas);
+     * - línea nueva: crea un lote nuevo, igual que al registrar.
+     * Las compras antiguas sin productos pueden seguir guardándose solo con su total manual.
+     */
+    private CompraEntity actualizarCompra(Compra compra) {
         CompraEntity entidad = buscarPorId(compra.getIdCompra());
         if (entidad.getEstado() == EstadoCompra.ANULADA) {
             throw new CompraException("No se puede editar una compra anulada.");
         }
         asignarCabecera(entidad, compra);
-        if (!detalleCompraRepository.existsByCompraIdCompra(entidad.getIdCompra()) && compra.getTotal() != null) {
-            entidad.setTotal(compra.getTotal());
+
+        Map<Integer, DetalleCompraEntity> existentes = new HashMap<>();
+        detalleCompraRepository.findByCompraConLote(entidad.getIdCompra())
+                .forEach(d -> existentes.put(d.getIdDetalleCompra(), d));
+
+        List<DetalleCompra> enviados = compra.getDetalles() == null ? List.of()
+                : compra.getDetalles().stream().filter(d -> d != null && d.getIdProducto() != null).toList();
+
+        if (enviados.isEmpty()) {
+            if (!existentes.isEmpty()) {
+                throw new CompraException("La compra debe tener al menos un producto. Si quieres dejarla sin efecto, anúlala.");
+            }
+            if (compra.getTotal() == null || compra.getTotal().signum() <= 0) {
+                throw new CompraException("Ingresa el monto total o agrega productos a la compra.");
+            }
+            entidad.setTotal(compra.getTotal()); // compra antigua sin productos
+            return compraRepository.save(entidad);
         }
+
+        // 1. Líneas quitadas: retirar su stock (solo si no se vendió nada del lote)
+        Set<Integer> idsEnviados = new HashSet<>();
+        enviados.forEach(d -> {
+            if (d.getIdDetalleCompra() != null) idsEnviados.add(d.getIdDetalleCompra());
+        });
+        for (DetalleCompraEntity d : existentes.values()) {
+            if (idsEnviados.contains(d.getIdDetalleCompra())) continue;
+            LoteEntity lote = d.getLote();
+            if (vendidas(lote) > 0) {
+                throw new CompraException("No se puede quitar \"" + d.getProducto().getNombre()
+                        + "\": ya se vendieron " + vendidas(lote) + " unidades del lote " + lote.getNumeroLote() + ".");
+            }
+            detalleCompraRepository.delete(d);
+            if (detalleVentaRepository.existsByLoteIdLote(lote.getIdLote())) {
+                lote.setStockActual(0);
+                lote.setCantidadInicial(0);
+            } else {
+                loteRepository.delete(lote);
+            }
+        }
+        detalleCompraRepository.flush();
+
+        // 2. Líneas existentes modificadas y líneas nuevas
+        Set<Integer> productosVistos = new HashSet<>();
+        BigDecimal total = BigDecimal.ZERO;
+        LocalDate hoy = LocalDate.now();
+
+        for (DetalleCompra d : enviados) {
+            if (d.getIdDetalleCompra() == null) {
+                total = total.add(crearLinea(entidad, d, productosVistos));
+                continue;
+            }
+            DetalleCompraEntity det = existentes.get(d.getIdDetalleCompra());
+            if (det == null) {
+                throw new CompraException("Uno de los productos no pertenece a esta compra. Recarga la página.");
+            }
+            ProductoEntity producto = det.getProducto(); // el producto de una línea existente no cambia
+            if (!productosVistos.add(producto.getIdProducto())) {
+                throw new CompraException("El producto \"" + producto.getNombre() + "\" está repetido en la compra.");
+            }
+
+            LoteEntity lote = det.getLote();
+            int vendidas = vendidas(lote);
+            if (d.getCantidad() < vendidas) {
+                throw new CompraException("La cantidad de \"" + producto.getNombre() + "\" no puede ser menor a "
+                        + vendidas + " (unidades ya vendidas de este lote).");
+            }
+            if (!d.getFechaVencimiento().equals(lote.getFechaVencimiento()) && !d.getFechaVencimiento().isAfter(hoy)) {
+                throw new CompraException("La fecha de vencimiento de \"" + producto.getNombre() + "\" debe ser posterior a hoy.");
+            }
+            String nuevoLote = d.getNumeroLote() == null ? "" : d.getNumeroLote().trim();
+            if (!nuevoLote.isEmpty() && !nuevoLote.equalsIgnoreCase(lote.getNumeroLote())) {
+                if (loteRepository.existsByProductoIdProductoAndNumeroLoteIgnoreCase(producto.getIdProducto(), nuevoLote)) {
+                    throw new CompraException("El lote \"" + nuevoLote + "\" ya existe para \"" + producto.getNombre() + "\".");
+                }
+                lote.setNumeroLote(nuevoLote);
+            }
+
+            lote.setCantidadInicial(d.getCantidad());
+            lote.setStockActual(d.getCantidad() - vendidas);
+            lote.setPrecioCompra(d.getPrecioUnitario());
+            lote.setFechaVencimiento(d.getFechaVencimiento());
+
+            BigDecimal subtotal = d.getPrecioUnitario().multiply(BigDecimal.valueOf(d.getCantidad()));
+            det.setCantidad(d.getCantidad());
+            det.setPrecioUnitario(d.getPrecioUnitario());
+            det.setSubtotal(subtotal);
+            total = total.add(subtotal);
+        }
+
+        entidad.setTotal(total);
         return compraRepository.save(entidad);
     }
 

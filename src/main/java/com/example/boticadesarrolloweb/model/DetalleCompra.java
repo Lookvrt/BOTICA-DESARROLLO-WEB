@@ -53,4 +53,7 @@ public class DetalleCompra {
 
     /** Cantidad mínima exigida (p. ej. productos que vienen de Alertas: stock mínimo + 1). */
     private Integer cantidadMinima;
+
+    /** Al editar: unidades de este lote que ya se vendieron (la cantidad no puede bajar de aquí). */
+    private Integer cantidadVendida;
 }

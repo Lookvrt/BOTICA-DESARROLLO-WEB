@@ -1,6 +1,7 @@
 package com.example.boticadesarrolloweb.controller;
 
 import com.example.boticadesarrolloweb.entity.ProductoEntity;
+import com.example.boticadesarrolloweb.repository.CompraRepository;
 import com.example.boticadesarrolloweb.repository.LoteRepository;
 import com.example.boticadesarrolloweb.repository.ProductoRepository;
 import com.example.boticadesarrolloweb.repository.ProveedorRepository;
@@ -46,6 +47,7 @@ class ComprasControllerTest {
     @Autowired ProveedorRepository proveedorRepository;
     @Autowired UsuarioRepository usuarioRepository;
     @Autowired LoteRepository loteRepository;
+    @Autowired CompraRepository compraRepository;
 
     private MockHttpSession session;
     private String csrf;
@@ -113,6 +115,32 @@ class ComprasControllerTest {
 
         assertEquals(stockA + 7, loteRepository.sumStockByProductoId(a.getIdProducto()));
         assertEquals(stockB + 3, loteRepository.sumStockByProductoId(b.getIdProducto()));
+    }
+
+    @Test
+    void editarAbreElMismoModalConLosProductosDeLaCompra() throws Exception {
+        ProductoEntity p = productoRepository.findAll().stream().findFirst().orElseThrow();
+        mvc.perform(formularioCompra()
+                        .param("detalles[0].idProducto", p.getIdProducto().toString())
+                        .param("detalles[0].cantidad", "4")
+                        .param("detalles[0].precioUnitario", "1.50")
+                        .param("detalles[0].numeroLote", "TEST-EDIT-1")
+                        .param("detalles[0].fechaVencimiento", LocalDate.now().plusYears(1).toString()))
+                .andExpect(status().is3xxRedirection());
+        Integer idCompra = compraRepository.findAll().stream()
+                .filter(c -> "F001-TEST".equals(c.getNumeroComprobante()))
+                .map(c -> c.getIdCompra()).max(Integer::compareTo).orElseThrow();
+
+        String html = mvc.perform(get("/compras/editar/" + idCompra).session(session))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("modalAbrir", "editar"))
+                .andReturn().getResponse().getContentAsString();
+
+        assertTrue(html.contains("Editar Compra CMP-"), "Título de edición");
+        assertTrue(html.contains("Actualizar Compra"), "Botón de edición");
+        assertTrue(html.contains("TEST-EDIT-1"), "Fila con el lote de la compra");
+        assertTrue(html.contains(p.getNombre()), "Fila con el producto de la compra");
+        assertFalse(html.contains("modalEditarCompra"), "El modal antiguo ya no existe");
     }
 
     @Test

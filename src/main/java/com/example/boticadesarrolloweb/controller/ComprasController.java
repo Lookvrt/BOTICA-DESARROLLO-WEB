@@ -2,6 +2,7 @@ package com.example.boticadesarrolloweb.controller;
 
 import com.example.boticadesarrolloweb.entity.CompraEntity;
 import com.example.boticadesarrolloweb.model.Compra;
+
 import com.example.boticadesarrolloweb.model.DetalleCompra;
 import com.example.boticadesarrolloweb.service.CompraService;
 import com.example.boticadesarrolloweb.service.CompraService.CompraException;
@@ -109,6 +110,7 @@ public class ComprasController {
         compraService.completarDatosVista(compra);
         cargarListas(model, null, "asc");
         model.addAttribute("modalAbrir", compra.getIdCompra() == null ? "nuevo" : "editar");
+        model.addAttribute("compraSinProductos", compraService.esCompraSinProductos(compra.getIdCompra()));
         model.addAttribute("error", error);
         return "compras";
     }
@@ -120,21 +122,11 @@ public class ComprasController {
             RedirectAttributes redirectAttributes) {
 
         try {
-            CompraEntity entidad = compraService.buscarPorId(id);
-
-            Compra compra = Compra.builder()
-                    .idCompra(entidad.getIdCompra())
-                    .idProveedor(entidad.getProveedor() != null ? entidad.getProveedor().getIdProveedor() : null)
-                    .idUsuario(entidad.getUsuario() != null ? entidad.getUsuario().getIdUsuario() : null)
-                    .fechaCompra(entidad.getFechaCompra())
-                    .tipoComprobante(entidad.getTipoComprobante())
-                    .numeroComprobante(entidad.getNumeroComprobante())
-                    .total(entidad.getTotal())
-                    .estado(entidad.getEstado())
-                    .build();
+            Compra compra = compraService.cargarParaEditar(id);
 
             model.addAttribute("compra", compra);
             model.addAttribute("modalAbrir", "editar");
+            model.addAttribute("compraSinProductos", compra.getDetalles().isEmpty());
             cargarListas(model, null, "asc");
 
             return "compras";

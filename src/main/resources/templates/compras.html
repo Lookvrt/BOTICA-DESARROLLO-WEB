@@ -15,8 +15,7 @@
                 <h3 class="fw-bold mb-1">Gestión de Compras</h3>
                 <p class="text-muted small mb-0">Administra las adquisiciones, proveedores, comprobantes y registro de abastecimiento de la botica.</p>
             </div>
-            <button class="btn btn-primary d-flex align-items-center gap-2 px-3 py-2 fw-semibold shadow-sm rounded-3"
-                    data-bs-toggle="modal" data-bs-target="#modalNuevaCompra">
+            <button id="btn-nueva-compra" class="btn btn-primary d-flex align-items-center gap-2 px-3 py-2 fw-semibold shadow-sm rounded-3">
                 <i class="bi bi-cart-plus-fill fs-5"></i>
                 <span>Nueva Compra</span>
             </button>
@@ -29,7 +28,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 
-        <div th:if="${(mensajeError != null or error != null) and modalAbrir != 'nuevo'}" class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 mb-3 shadow-sm rounded-3" role="alert">
+        <div th:if="${(mensajeError != null or error != null) and modalAbrir == null}" class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 mb-3 shadow-sm rounded-3" role="alert">
             <i class="bi bi-exclamation-triangle-fill fs-5"></i>
             <span th:text="${mensajeError ?: error}">Ocurrió un error.</span>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -105,16 +104,10 @@
                         </td>
                         <td class="py-3 text-end fw-semibold text-dark" th:text="${c.total != null ? 'S/ ' + #numbers.formatDecimal(c.total, 1, 2) : 'S/ 0.00'}">S/ 0.00</td>
                         <td class="text-end pe-3">
-                            <button type="button" class="btn btn-outline-primary btn-sm me-1 rounded-2 btn-editar-compra"
-                                    th:data-id="${c.idCompra}"
-                                    th:data-proveedor="${c.proveedor != null ? c.proveedor.idProveedor : ''}"
-                                    th:data-usuario="${c.usuario != null ? c.usuario.idUsuario : ''}"
-                                    th:data-tipocomprobante="${c.tipoComprobante}"
-                                    th:data-numerocomprobante="${c.numeroComprobante}"
-                                    th:data-total="${c.total}"
-                                    title="Editar compra">
+                            <a th:href="@{/compras/editar/{id}(id=${c.idCompra})}"
+                               class="btn btn-outline-primary btn-sm me-1 rounded-2" title="Editar compra">
                                 <i class="bi bi-pencil-square"></i>
-                            </button>
+                            </a>
                             <button type="button" class="btn btn-outline-danger btn-sm rounded-2 btn-eliminar-compra"
                                     th:data-id="${c.idCompra}"
                                     th:data-comprobante="${(c.tipoComprobante ?: '') + '/' + (c.numeroComprobante ?: '')}"
@@ -131,22 +124,32 @@
     </main>
 </div>
 
-<!-- MODAL: NUEVA COMPRA -->
-<div class="modal fade" id="modalNuevaCompra" tabindex="-1" aria-labelledby="modalNuevaCompraLabel" aria-hidden="true" th:data-abrir="${modalAbrir == 'nuevo'}">
+<!-- MODAL: NUEVA COMPRA / EDITAR COMPRA (mismo formulario; si trae idCompra es edición) -->
+<div class="modal fade" id="modalNuevaCompra" tabindex="-1" aria-labelledby="modalNuevaCompraLabel" aria-hidden="true"
+     th:data-abrir="${modalAbrir != null}" th:data-edicion="${compra.idCompra != null}">
     <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
         <div class="modal-content border-0 shadow">
             <form th:action="@{/compras/guardar}" method="post" th:object="${compra}" id="form-nueva-compra" novalidate>
                 <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <input type="hidden" th:field="*{idCompra}"/>
 
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title fw-bold" id="modalNuevaCompraLabel">
-                        <i class="bi bi-cart-plus me-2"></i>Registrar Nueva Compra
+                        <th:block th:if="*{idCompra == null}"><i class="bi bi-cart-plus me-2"></i>Registrar Nueva Compra</th:block>
+                        <th:block th:if="*{idCompra != null}"><i class="bi bi-pencil-square me-2"></i><span
+                                th:text="'Editar Compra CMP-' + ${#numbers.formatInteger(compra.idCompra, 3)}">Editar Compra</span></th:block>
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
                 <div class="modal-body p-4">
-                    <div th:if="${modalAbrir == 'nuevo' and error != null}" class="alert alert-danger py-2 small" th:text="${error}"></div>
+                    <div th:if="${modalAbrir != null and error != null}" class="alert alert-danger py-2 small" th:text="${error}"></div>
+
+                    <div th:if="*{idCompra != null}" class="alert alert-light border py-2 small d-flex align-items-center gap-2">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        <span>Los cambios en cantidades y productos ajustan el inventario. Un lote con ventas no se puede quitar
+                            ni bajar de las unidades ya vendidas.</span>
+                    </div>
 
                     <div th:if="${compra.detalles.?[cantidadMinima != null].size() > 0}"
                          class="alert alert-info py-2 small d-flex align-items-center gap-2">
@@ -216,10 +219,13 @@
                             </thead>
                             <tbody id="tabla-detalle-compra">
                             <tr th:each="d, st : *{detalles}" class="fila-detalle"
-                                th:attr="data-id=${d.idProducto},data-min=${d.cantidadMinima}">
+                                th:attr="data-id=${d.idProducto},data-min=${d.cantidadMinima},data-vendida=${d.cantidadVendida ?: 0}">
                                 <td class="ps-3">
-                                    <div class="fw-semibold" th:text="${d.nombreProducto}">Producto</div>
+                                    <div class="fw-semibold nombre-detalle" th:text="${d.nombreProducto}">Producto</div>
                                     <div class="small text-secondary" th:text="${d.codigoProducto}">MED000</div>
+                                    <div class="small text-warning-emphasis" th:if="${d.cantidadVendida != null and d.cantidadVendida > 0}"
+                                         th:text="${'Vendidas de este lote: ' + d.cantidadVendida}">Vendidas: 0</div>
+                                    <input type="hidden" data-campo="idDetalleCompra" th:value="${d.idDetalleCompra}">
                                     <input type="hidden" data-campo="idProducto" th:value="${d.idProducto}">
                                     <input type="hidden" data-campo="cantidadMinima" th:value="${d.cantidadMinima}">
                                 </td>
@@ -228,7 +234,8 @@
                                           th:text="${d.stockActual}">0</span> / <span th:text="${d.stockMinimo}">0</span>
                                 </td>
                                 <td><input type="number" data-campo="cantidad" class="form-control form-control-sm" step="1"
-                                           th:value="${d.cantidad}" th:attr="min=${d.cantidadMinima ?: 1}" required></td>
+                                           th:value="${d.cantidad}"
+                                           th:attr="min=${d.cantidadMinima ?: (d.cantidadVendida != null and d.cantidadVendida > 0 ? d.cantidadVendida : 1)}" required></td>
                                 <td><input type="number" data-campo="precioUnitario" class="form-control form-control-sm" min="0.01" step="0.01"
                                            th:value="${d.precioUnitario}" required></td>
                                 <td><input type="text" data-campo="numeroLote" class="form-control form-control-sm" maxlength="50"
@@ -237,7 +244,9 @@
                                            th:value="${d.fechaVencimiento}" required></td>
                                 <td class="text-end fw-semibold subtotal-detalle">0.00</td>
                                 <td class="text-end pe-3">
-                                    <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-quitar-detalle" title="Quitar">
+                                    <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-quitar-detalle"
+                                            th:disabled="${d.cantidadVendida != null and d.cantidadVendida > 0}"
+                                            th:title="${d.cantidadVendida != null and d.cantidadVendida > 0} ? 'No se puede quitar: el lote tiene ventas' : 'Quitar'">
                                         <i class="bi bi-x-lg"></i>
                                     </button>
                                 </td>
@@ -253,11 +262,20 @@
 
                     <div class="d-flex justify-content-between align-items-center mt-3">
                         <span class="small text-secondary">
-                            Cada producto ingresa al inventario como un lote nuevo. Si no indicas el N° de lote, se genera automáticamente.
+                            Cada producto nuevo ingresa al inventario como un lote nuevo. Si no indicas el N° de lote, se genera automáticamente.
                         </span>
-                        <div class="text-end">
+                        <div class="text-end" id="bloque-total-calculado">
                             <span class="text-secondary me-2">Total</span>
                             <span class="fs-5 fw-bold" id="total-compra">S/ 0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Compras antiguas sin productos: conservan su total manual mientras no se agreguen productos -->
+                    <div th:if="${compraSinProductos}" id="bloque-total-manual" class="row justify-content-end mt-3">
+                        <div class="col-md-4">
+                            <label for="total-manual" class="form-label fw-semibold small">Monto total (S/) <span class="text-danger">*</span></label>
+                            <input type="number" id="total-manual" th:field="*{total}" class="form-control" min="0.01" step="0.01">
+                            <div class="form-text">Compra registrada sin productos. Si agregas productos, el total se calculará con ellos.</div>
                         </div>
                     </div>
                     <div id="error-detalle-compra" class="alert alert-warning py-2 small mt-3 d-none"></div>
@@ -265,70 +283,8 @@
 
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary px-4 fw-semibold">Guardar Compra</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL: EDITAR COMPRA -->
-<div class="modal fade" id="modalEditarCompra" tabindex="-1" aria-labelledby="modalEditarCompraLabel" aria-hidden="true" th:data-abrir="${modalAbrir == 'editar'}">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <form th:action="@{/compras/guardar}" method="post">
-                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                <input type="hidden" name="idCompra" id="edit-idCompra">
-
-                <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title fw-bold" id="modalEditarCompraLabel">
-                        <i class="bi bi-pencil-square me-2"></i>Editar Compra
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-
-                <div class="modal-body p-4">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Proveedor <span class="text-danger">*</span></label>
-                            <select name="idProveedor" id="edit-idProveedor" class="form-select" required>
-                                <option value="">Seleccionar proveedor</option>
-                                <option th:each="p : ${proveedores}" th:value="${p.idProveedor}" th:text="${p.razonSocial}"></option>
-                            </select>
-                        </div>
-
-                        <div class="col-12">
-                            <label for="edit-idUsuario" class="form-label fw-semibold">Usuario responsable <span class="text-danger">*</span></label>
-                            <select id="edit-idUsuario" name="idUsuario" class="form-select" required>
-                                <option value="">Seleccione un usuario</option>
-                                <option th:each="u : ${usuarios}" th:value="${u.idUsuario}" th:text="${u.nombres + ' ' + u.apellidos}"></option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Tipo Comprobante <span class="text-danger">*</span></label>
-                            <select name="tipoComprobante" id="edit-tipoComprobante" class="form-select" required>
-                                <option value="FA">Factura</option>
-                                <option value="BO">Boleta</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">N° Comprobante <span class="text-danger">*</span></label>
-                            <input type="text" name="numeroComprobante" id="edit-numeroComprobante" class="form-control" maxlength="50" required>
-                        </div>
-
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Monto Total (S/) <span class="text-danger">*</span></label>
-                            <input type="number" name="total" id="edit-total" class="form-control" min="0.01" step="0.01" required>
-                            <div class="form-text">En compras con productos el total se calcula automáticamente y no cambia aquí.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-dark px-4 fw-semibold">Actualizar Compra</button>
+                    <button type="submit" class="btn btn-primary px-4 fw-semibold"
+                            th:text="*{idCompra == null} ? 'Guardar Compra' : 'Actualizar Compra'">Guardar Compra</button>
                 </div>
             </form>
         </div>
