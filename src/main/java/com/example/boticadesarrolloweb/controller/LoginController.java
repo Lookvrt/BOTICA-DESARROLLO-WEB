@@ -1,7 +1,6 @@
 package com.example.boticadesarrolloweb.controller;
 
 import com.example.boticadesarrolloweb.entity.UsuarioEntity;
-import com.example.boticadesarrolloweb.enums.Rol;
 import com.example.boticadesarrolloweb.security.LoginAttemptService;
 import com.example.boticadesarrolloweb.service.OtpService;
 import com.example.boticadesarrolloweb.service.UsuarioService;

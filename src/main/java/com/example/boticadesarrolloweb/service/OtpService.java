@@ -9,8 +9,8 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Random;
 
 /**
  * Servicio para gestión del OTP (One-Time Password) de doble autenticación.
@@ -22,13 +22,22 @@ import java.util.Random;
 @RequiredArgsConstructor
 public class OtpService {
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final int OTP_DURACION_MINUTOS = 5;
+
     private final JavaMailSender mailSender;
     private final UsuarioRepository usuarioRepository;
 
     @Value("${app.mail.from:seguridad@botica.com}")
     private String emailRemitente;
 
-    private static final int OTP_DURACION_MINUTOS = 5;
+    /**
+     * Genera un código numérico criptográficamente seguro de 6 dígitos (000000 - 999999).
+     */
+    private String generarCodigoOtp() {
+        int codigo = SECURE_RANDOM.nextInt(1_000_000);
+        return String.format("%06d", codigo);
+    }
 
     /**
      * Genera un OTP de 6 dígitos, lo guarda en la BD y lo envía al email del usuario.
@@ -36,7 +45,7 @@ public class OtpService {
      * @param usuario entidad del usuario autenticado
      */
     public void generarYEnviarOtp(UsuarioEntity usuario) {
-        String otp = String.format("%06d", new Random().nextInt(999999));
+        String otp = generarCodigoOtp();
         LocalDateTime expiracion = LocalDateTime.now().plusMinutes(OTP_DURACION_MINUTOS);
 
         // Guardar OTP en BD
@@ -61,7 +70,7 @@ public class OtpService {
     /**
      * Valida el código OTP ingresado por el usuario.
      *
-     * @param usuario entidad del usuario
+     * @param usuario         entidad del usuario
      * @param codigoIngresado código que el usuario escribió en el formulario
      * @return true si el código es correcto y no ha expirado
      */
@@ -94,11 +103,11 @@ public class OtpService {
         mensaje.setSubject("🔐 Código de verificación — Botica Ahorro y Salud");
         mensaje.setText(
                 "Hola " + nombre + ",\n\n" +
-                "Tu código de verificación para acceder al sistema es:\n\n" +
-                "  ➡  " + otp + "\n\n" +
-                "Este código es válido por " + OTP_DURACION_MINUTOS + " minutos.\n" +
-                "Si no solicitaste este código, ignora este mensaje.\n\n" +
-                "— Sistema Botica Ahorro y Salud"
+                        "Tu código de verificación para acceder al sistema es:\n\n" +
+                        "  ➡  " + otp + "\n\n" +
+                        "Este código es válido por " + OTP_DURACION_MINUTOS + " minutos.\n" +
+                        "Si no solicitaste este código, ignora este mensaje.\n\n" +
+                        "— Sistema Botica Ahorro y Salud"
         );
         mailSender.send(mensaje);
     }
@@ -106,9 +115,11 @@ public class OtpService {
     /**
      * Genera un código OTP específicamente para la recuperación de contraseña,
      * lo almacena en BD y lo envía al correo del usuario.
+     *
+     * @param usuario entidad del usuario que solicita recuperar su contraseña
      */
     public void generarYEnviarOtpRecuperacion(UsuarioEntity usuario) {
-        String otp = String.format("%06d", new Random().nextInt(999999));
+        String otp = generarCodigoOtp();
         LocalDateTime expiracion = LocalDateTime.now().plusMinutes(OTP_DURACION_MINUTOS);
 
         usuario.setOtpCode(otp);
@@ -122,12 +133,12 @@ public class OtpService {
             mensaje.setSubject("🔑 Recuperación de contraseña — Botica Ahorro y Salud");
             mensaje.setText(
                     "Hola " + usuario.getNombres() + ",\n\n" +
-                    "Recibimos una solicitud para restablecer la contraseña de tu cuenta.\n" +
-                    "Tu código de verificación de 6 dígitos es:\n\n" +
-                    "  ➡  " + otp + "\n\n" +
-                    "Este código expirará en " + OTP_DURACION_MINUTOS + " minutos.\n" +
-                    "Si no solicitaste este cambio, puedes ignorar este mensaje de forma segura.\n\n" +
-                    "— Equipo de Seguridad Botica Ahorro y Salud"
+                            "Recibimos una solicitud para restablecer la contraseña de tu cuenta.\n" +
+                            "Tu código de verificación de 6 dígitos es:\n\n" +
+                            "  ➡  " + otp + "\n\n" +
+                            "Este código expirará en " + OTP_DURACION_MINUTOS + " minutos.\n" +
+                            "Si no solicitaste este cambio, puedes ignorar este mensaje de forma segura.\n\n" +
+                            "— Equipo de Seguridad Botica Ahorro y Salud"
             );
             mailSender.send(mensaje);
             log.info("📧 Email de recuperación OTP enviado con éxito a: {}", usuario.getEmail());
