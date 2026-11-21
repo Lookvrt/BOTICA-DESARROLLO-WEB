@@ -1,6 +1,7 @@
 package com.example.boticadesarrolloweb.controller;
 
 import com.example.boticadesarrolloweb.enums.MetodoPago;
+import com.example.boticadesarrolloweb.model.InventarioItemDto;
 import com.example.boticadesarrolloweb.model.PuntoVentaDto.ProductoVenta;
 import com.example.boticadesarrolloweb.model.PuntoVentaDto.VentaRequest;
 import com.example.boticadesarrolloweb.model.PuntoVentaDto.VentaResponse;
@@ -15,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import com.example.boticadesarrolloweb.service.ProductoService;
 
 import java.util.List;
 import java.util.Map;
@@ -26,9 +28,16 @@ public class VentaController {
 
     private final PuntoVentaService puntoVentaService;
     private final UsuarioRepository usuarioRepository;
+    private final ProductoService productoService;
 
     @GetMapping("/venta")
-    public String venta(Model model) {
+    public String mostrarPuntoVenta(Model model) {
+        List<InventarioItemDto> productosDisponibles = productoService.listarInventario(null, null, null)
+                .stream()
+                .filter(item -> item.getStockTotal() != null && item.getStockTotal() > 0)
+                .toList();
+
+        model.addAttribute("productos", productosDisponibles);
         model.addAttribute("metodosPago", MetodoPago.values());
         return "venta";
     }

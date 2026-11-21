@@ -4,145 +4,277 @@
 </head>
 <body class="bg-light">
 
-<!-- Token CSRF para las peticiones POST desde venta.js -->
-<input type="hidden" id="csrf-token" th:if="${_csrf}" th:value="${_csrf.token}" th:attr="data-header=${_csrf.headerName}"/>
+<!-- Tokens CSRF disponibles para peticiones fetch() en venta.js -->
+<input type="hidden" id="csrfToken" th:if="${_csrf}" th:value="${_csrf.token}"/>
+<input type="hidden" id="csrfHeader" th:if="${_csrf}" th:value="${_csrf.headerName}"/>
 
 <div class="d-flex">
     <div th:replace="~{fragment/sidebar :: sidebar('venta')}"></div>
 
     <main class="flex-grow-1 p-4 overflow-auto min-vh-100" style="margin-left: 260px;">
 
-        <h3 class="mb-4 fw-semibold">Punto de Venta</h3>
+        <!-- Encabezado de Sección -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+            <div>
+                <h3 class="fw-bold mb-1">Punto de Venta</h3>
+                <p class="text-muted small mb-0">Selecciona productos del catálogo, arma el carrito y registra la venta con descuento automático de stock.</p>
+            </div>
+            <a th:href="@{/ventas}" class="btn btn-outline-secondary d-flex align-items-center gap-2 px-3 py-2 fw-semibold rounded-3">
+                <i class="bi bi-receipt"></i>
+                <span>Historial de Ventas</span>
+            </a>
+        </div>
 
-        <div id="alerta-venta" class="alert d-none" role="alert"></div>
+        <!-- Alerta dinámica para notificaciones de caja -->
+        <div id="alertaVenta" class="alert d-none align-items-center justify-content-between mb-3 shadow-sm rounded-3" role="alert">
+            <div class="d-flex align-items-center gap-2">
+                <i id="alertaVentaIcono" class="bi bi-info-circle-fill fs-5"></i>
+                <span id="alertaVentaTexto"></span>
+            </div>
+            <button type="button" class="btn-close" id="btnCerrarAlertaVenta" aria-label="Cerrar"></button>
+        </div>
 
-        <div class="row g-4">
+        <div class="row g-3">
 
-            <div class="col-12 col-lg-7 d-flex flex-column">
-                <div class="card border border-light-subtle p-4 shadow-sm bg-white rounded-3 flex-grow-1">
-
-                    <form id="form-buscar" class="d-flex gap-3 mb-4" autocomplete="off">
-                        <div class="input-group flex-grow-1">
-                            <span class="input-group-text bg-white text-muted border-end-0" id="search-icon">
-                                <i class="bi bi-search"></i>
-                            </span>
-                            <input type="text" id="input-buscar" class="form-control border-start-0 ps-0 shadow-none"
-                                   placeholder="Producto, código o principio activo" aria-label="Producto"
-                                   aria-describedby="search-icon" autofocus>
-                        </div>
-                        <button type="submit" class="btn btn-light border px-4 fw-semibold text-secondary">Buscar</button>
-                    </form>
-
-                    <div class="table-responsive">
-                        <table class="table align-middle">
-                            <thead>
-                            <tr class="text-secondary">
-                                <th class="fw-normal border-bottom-2">Nombre</th>
-                                <th class="fw-normal border-bottom-2 text-center">Stock</th>
-                                <th class="fw-normal border-bottom-2 text-center">Precio</th>
-                                <th class="border-bottom-2"></th>
-                            </tr>
-                            </thead>
-                            <tbody id="tabla-resultados">
-                            <tr>
-                                <td colspan="4" class="text-center text-secondary py-4">
-                                    Escribe el nombre, código o principio activo de un producto.
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
+            <!-- COLUMNA IZQUIERDA: CATÁLOGO DE PRODUCTOS -->
+            <div class="col-12 col-lg-7">
+                <div class="card border-0 p-4 shadow-sm bg-white rounded-3 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0">
+                            <i class="bi bi-capsule text-primary me-2"></i>Catálogo de Productos
+                        </h5>
+                        <span class="badge bg-light text-secondary border px-3 py-2" id="contadorProductosVenta"
+                              th:text="${(productos != null ? #lists.size(productos) : 0) + ' productos disponibles'}">
+                            0 productos disponibles
+                        </span>
                     </div>
 
+                    <!-- Barra de búsqueda instantánea por nombre -->
+                    <div class="input-group mb-3">
+                        <span class="input-group-text bg-white text-muted border-end-0">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" id="buscarProductoVenta"
+                               class="form-control border-start-0 ps-0 shadow-none"
+                               placeholder="Buscar producto por nombre..."
+                               autocomplete="off">
+                        <button type="button" id="btnLimpiarBusquedaVenta"
+                                class="btn btn-outline-secondary d-none" title="Limpiar búsqueda">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+
+                    <!-- Grilla de Productos Disponibles -->
+                    <div class="row g-2 overflow-auto pe-1" id="listaProductosVenta" style="max-height: 64vh;">
+                        <div class="col-12 col-md-6 item-producto-venta"
+                             th:each="item : ${productos}"
+                             th:data-nombre="${item.producto.nombre}">
+
+                            <div class="border rounded-3 p-3 h-100 d-flex flex-column justify-content-between bg-white producto-card-pos">
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                                        <h6 class="fw-bold text-dark mb-0" th:text="${item.producto.nombre}">Paracetamol 500mg</h6>
+                                        <span class="fw-bold text-primary text-nowrap"
+                                              th:text="${item.producto.precioVenta != null ? 'S/ ' + #numbers.formatDecimal(item.producto.precioVenta, 1, 2) : 'S/ 0.00'}">
+                                            S/ 0.00
+                                        </span>
+                                    </div>
+
+                                    <p class="text-muted small mb-2">
+                                        <span th:text="${item.producto.concentracion ?: ''}">500mg</span>
+                                        <span th:if="${item.producto.presentacion != null and !item.producto.presentacion.isEmpty()}"
+                                              th:text="' · ' + ${item.producto.presentacion}"> · Caja x 20</span>
+                                    </p>
+                                </div>
+
+                                <div class="d-flex justify-content-between align-items-center pt-2 border-top mt-2">
+                                    <div class="d-flex flex-wrap gap-1 align-items-center">
+                                        <span class="badge"
+                                              th:classappend="${item.estadoStock == 'CRITICO'} ? 'bg-warning text-dark' : 'bg-success bg-opacity-10 text-success'"
+                                              th:text="'Stock: ' + ${item.stockTotal}">
+                                            Stock: 10
+                                        </span>
+                                        <span th:if="${item.producto.requiereReceta == 1}"
+                                              class="badge bg-danger bg-opacity-10 text-danger"
+                                              title="Requiere receta médica">
+                                            <i class="bi bi-file-earmark-medical"></i> Receta
+                                        </span>
+                                    </div>
+
+                                    <button type="button"
+                                            class="btn btn-sm btn-primary fw-semibold btn-agregar-carrito"
+                                            th:data-id="${item.producto.idProducto}"
+                                            th:data-nombre="${item.producto.nombre}"
+                                            th:data-precio="${item.producto.precioVenta}"
+                                            th:data-stock="${item.stockTotal}"
+                                            th:data-receta="${item.producto.requiereReceta}">
+                                        <i class="bi bi-plus-lg"></i> Agregar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Estado vacío si no hay productos con stock -->
+                        <div th:if="${productos == null or #lists.isEmpty(productos)}" class="col-12 text-center py-5 text-muted">
+                            <i class="bi bi-box-seam fs-1 d-block mb-2 opacity-50"></i>
+                            No hay productos con stock disponible para la venta.
+                        </div>
+
+                        <!-- Estado vacío cuando el filtro no encuentra coincidencias -->
+                        <div id="sinResultadosVenta" class="col-12 text-center py-5 text-muted d-none">
+                            <i class="bi bi-search fs-2 d-block mb-2 opacity-50"></i>
+                            No se encontraron productos con ese nombre.
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="col-12 col-lg-5 d-flex flex-column">
-                <div class="card border border-light-subtle p-3 p-md-4 shadow-sm bg-white rounded-3 flex-grow-1 d-flex flex-column gap-3">
+            <!-- COLUMNA DERECHA: CARRITO Y RESUMEN DE PAGO -->
+            <div class="col-12 col-lg-5">
+                <div class="card border-0 p-4 shadow-sm bg-white rounded-3 h-100 d-flex flex-column justify-content-between">
 
-                    <div class="p-3 rounded-3 flex-grow-1">
-                        <h6 class="mb-3 fw-bold">Carrito</h6>
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                            <h5 class="fw-bold mb-0">
+                                <i class="bi bi-cart3 text-success me-2"></i>Detalle de Venta
+                            </h5>
+                            <button type="button" id="btnVaciarCarrito" class="btn btn-sm btn-outline-danger d-none">
+                                <i class="bi bi-trash me-1"></i>Vaciar
+                            </button>
+                        </div>
 
-                        <div class="table-responsive">
-                            <table class="table align-middle mb-0">
-                                <thead>
-                                <tr class="text-secondary">
-                                    <th class="fw-normal border-bottom-2">Producto</th>
-                                    <th class="fw-normal border-bottom-2 text-center">Cant</th>
-                                    <th class="fw-normal border-bottom-2 text-end">Subtotal</th>
-                                    <th class="border-bottom-2"></th>
+                        <!-- Tabla de ítems agregados al carrito -->
+                        <div class="table-responsive mb-3" style="max-height: 34vh; overflow-y: auto;">
+                            <table class="table table-sm align-middle mb-0" id="tablaCarritoVenta">
+                                <thead class="table-light text-secondary small text-uppercase">
+                                <tr>
+                                    <th>Producto</th>
+                                    <th class="text-center" style="width: 115px;">Cant.</th>
+                                    <th class="text-end">Subtotal</th>
+                                    <th class="text-end" style="width: 36px;"></th>
                                 </tr>
                                 </thead>
-                                <tbody id="tabla-carrito">
+                                <tbody id="tbodyCarritoVenta">
+                                <tr id="filaCarritoVacio">
+                                    <td colspan="4" class="text-center py-5 text-muted">
+                                        <i class="bi bi-cart-x fs-1 d-block mb-2 opacity-50"></i>
+                                        El carrito está vacío.<br>
+                                        <small>Agrega productos desde el catálogo para iniciar la venta.</small>
+                                    </td>
+                                </tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
 
-                    <div class="p-3 rounded-3 mt-auto">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0 fw-bold">Total a pagar</h6>
-                            <h5 class="mb-0 fw-bold" id="total-pagar">S/ 0.00</h5>
+                    <!-- Datos de Pago y Confirmación -->
+                    <div class="border-top pt-3">
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label for="metodoPago" class="form-label small fw-semibold text-secondary mb-1">
+                                    Método de Pago <span class="text-danger">*</span>
+                                </label>
+                                <select id="metodoPago" class="form-select form-select-sm" required>
+                                    <option th:each="mp : ${metodosPago}"
+                                            th:value="${mp.name()}"
+                                            th:text="${mp.name()}"
+                                            th:selected="${mp.name() == 'EFECTIVO'}">
+                                        EFECTIVO
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6" id="grupoMontoRecibido">
+                                <label for="montoRecibido" class="form-label small fw-semibold text-secondary mb-1">
+                                    Efectivo Recibido (S/)
+                                </label>
+                                <input type="number" id="montoRecibido" class="form-control form-control-sm"
+                                       placeholder="0.00" min="0" step="0.10">
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="metodo-pago" class="form-label small text-secondary mb-1">Método de pago</label>
-                            <select id="metodo-pago" class="form-select">
-                                <option th:each="m : ${metodosPago}" th:value="${m.name()}" th:text="${m.descripcion}">Efectivo</option>
-                            </select>
-                        </div>
-
-                        <div class="row g-2 mb-3" id="bloque-efectivo">
-                            <div class="col-6">
-                                <label for="monto-recibido" class="form-label small text-secondary mb-1">Monto recibido</label>
-                                <input type="number" id="monto-recibido" class="form-control" min="0" step="0.10" placeholder="0.00">
+                        <!-- Totales -->
+                        <div class="bg-light rounded-3 p-3 mb-3">
+                            <div class="d-flex justify-content-between small text-muted mb-1">
+                                <span>Ítems en carrito:</span>
+                                <span id="cantidadItemsVenta" class="fw-semibold text-dark">0</span>
                             </div>
-                            <div class="col-6">
-                                <label class="form-label small text-secondary mb-1">Vuelto</label>
-                                <div class="form-control bg-light fw-semibold" id="vuelto">S/ 0.00</div>
+                            <div class="d-flex justify-content-between small text-muted mb-1" id="filaVueltoVenta">
+                                <span>Vuelto estimado:</span>
+                                <span id="vueltoVentaDisplay" class="fw-semibold text-success">S/ 0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center pt-2 mt-2 border-top">
+                                <span class="fw-bold text-dark fs-6">TOTAL A PAGAR</span>
+                                <span id="totalVentaDisplay" class="fw-bold text-primary fs-4">S/ 0.00</span>
                             </div>
                         </div>
 
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <button type="button" id="btn-cobrar"
-                                        class="btn w-100 py-2 fw-semibold bg-primary bg-opacity-25 text-dark border-0 rounded-2">
-                                    Cobrar
-                                </button>
-                            </div>
-                            <div class="col-6">
-                                <button type="button" id="btn-cancelar"
-                                        class="btn w-100 py-2 fw-semibold bg-danger bg-opacity-25 text-dark border-0 rounded-2">
-                                    Cancelar
-                                </button>
-                            </div>
-                        </div>
+                        <button type="button" id="btnRegistrarVenta"
+                                class="btn btn-success w-100 py-2 fw-bold shadow-sm rounded-3 d-flex justify-content-center align-items-center gap-2"
+                                disabled>
+                            <i class="bi bi-check-circle-fill fs-5"></i>
+                            <span>Registrar Venta</span>
+                        </button>
                     </div>
+
                 </div>
             </div>
+
         </div>
     </main>
 </div>
 
-<!-- Modal de venta registrada -->
-<div class="modal fade" id="modal-venta-ok" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+<!-- MODAL: COMPROBANTE DE VENTA REGISTRADA -->
+<div class="modal fade" id="modalComprobanteVenta" tabindex="-1" aria-labelledby="modalComprobanteVentaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content border-0 shadow">
-            <div class="modal-body text-center p-4">
-                <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
-                <h5 class="fw-bold mt-3">Venta registrada</h5>
-                <p class="text-secondary mb-1">Comprobante <span class="fw-semibold text-dark" id="ok-comprobante"></span></p>
-                <p class="text-secondary mb-1">Total: <span class="fw-semibold text-dark" id="ok-total"></span></p>
-                <p class="text-secondary mb-1">Pago: <span class="fw-semibold text-dark" id="ok-metodo"></span></p>
-                <p class="text-secondary mb-0 d-none" id="ok-vuelto-linea">Vuelto: <span class="fw-semibold text-dark" id="ok-vuelto"></span></p>
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold" id="modalComprobanteVentaLabel">
+                    <i class="bi bi-check-circle-fill me-2"></i>Venta Exitosa
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-            <div class="modal-footer border-0 justify-content-center pt-0 pb-4">
-                <button type="button" class="btn btn-primary px-4" data-bs-dismiss="modal">Nueva venta</button>
+            <div class="modal-body text-center p-4">
+                <p class="text-muted small mb-1">Comprobante generado</p>
+                <h4 class="fw-bold text-dark mb-3" id="modalNumeroComprobante">B001-00001</h4>
+
+                <div class="bg-light rounded-3 p-3 text-start small">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Método de pago:</span>
+                        <span class="fw-semibold text-dark" id="modalMetodoPago">EFECTIVO</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Total cobrado:</span>
+                        <span class="fw-bold text-primary" id="modalTotalVenta">S/ 0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between" id="modalFilaVuelto">
+                        <span class="text-muted">Vuelto:</span>
+                        <span class="fw-bold text-success" id="modalVueltoVenta">S/ 0.00</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-light justify-content-center">
+                <button type="button" id="btnNuevaVentaModal" class="btn btn-primary w-100 fw-semibold" data-bs-dismiss="modal">
+                    Nueva Venta
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+<style>
+    .producto-card-pos {
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .producto-card-pos:hover {
+        border-color: #0d6efd !important;
+        box-shadow: 0 0.25rem 0.6rem rgba(13, 110, 253, 0.08);
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous"></script>
 <script th:src="@{/js/venta.js}"></script>
 </body>
 </html>

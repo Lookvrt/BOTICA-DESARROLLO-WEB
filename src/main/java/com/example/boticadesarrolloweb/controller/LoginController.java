@@ -177,7 +177,7 @@ public class LoginController {
 
             return switch (usuario.getRol()) {
                 case ADMINISTRADOR -> "redirect:/dashboard";
-                case ALMACENERO -> "redirect:/alertas";
+                case ALMACENERO -> "redirect:/compras";
                 case VENDEDOR -> "redirect:/venta";
             };
         }
