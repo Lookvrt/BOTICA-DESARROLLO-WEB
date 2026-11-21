@@ -55,9 +55,9 @@ public class VentaEntity {
     private EstadoVenta estado = EstadoVenta.REGISTRADA;
 
     @PrePersist
-    void asignarFechaVenta() {
-        if (fechaVenta == null) {
-            fechaVenta = LocalDateTime.now();
+    public void prePersist() {
+        if (this.fechaVenta == null) {
+            this.fechaVenta = LocalDateTime.now(java.time.ZoneId.of("America/Lima"));
         }
     }
 }

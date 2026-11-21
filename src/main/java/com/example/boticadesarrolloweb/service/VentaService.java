@@ -69,18 +69,20 @@ public class VentaService {
     @Transactional(readOnly = true)
     public Map<String, Object> obtenerVentasHoyGrafico() {
         Map<String, BigDecimal> mapaHoras = new LinkedHashMap<>();
-        for (int h = 8; h <= 22; h += 2) {
+        for (int h = 0; h <= 22; h += 2) {
             mapaHoras.put(String.format("%02d:00", h), BigDecimal.ZERO);
         }
 
-        List<Object[]> resultados = ventaRepository.obtenerVentasHoyPorHora();
+        LocalDate hoy = LocalDate.now();
+        List<Object[]> resultados = ventaRepository.obtenerVentasHoyPorHora(
+                hoy.atStartOfDay(),
+                hoy.atTime(LocalTime.MAX)
+        );
+
         for (Object[] fila : resultados) {
             if (fila[0] != null && fila[1] != null) {
                 int hora = Integer.parseInt(fila[0].toString());
                 int rangoHora = (hora / 2) * 2;
-                if (rangoHora < 8) rangoHora = 8;
-                if (rangoHora > 22) rangoHora = 22;
-
                 String clave = String.format("%02d:00", rangoHora);
                 BigDecimal actual = mapaHoras.getOrDefault(clave, BigDecimal.ZERO);
                 mapaHoras.put(clave, actual.add(new BigDecimal(fila[1].toString())));
