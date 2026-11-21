@@ -5,6 +5,7 @@ import com.example.boticadesarrolloweb.service.ReporteService;
 import com.example.boticadesarrolloweb.service.VentaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -26,7 +29,6 @@ public class ReporteController {
     private final ReporteService reporteService;
     private final ReporteExportService reporteExportService;
 
-    // --- RUTA PRINCIPAL DE LA VISTA ---
     @GetMapping("/reporte")
     public String reporte(Model model) {
         model.addAttribute("totalVentas", ventaService.obtenerTotalVentas());
@@ -34,11 +36,9 @@ public class ReporteController {
         model.addAttribute("promedioVenta", reporteService.calcularPromedioVenta());
         model.addAttribute("topProducto", ventaService.obtenerTopProducto());
         model.addAttribute("ventasRecientes", reporteService.obtenerDetalleVentasRecientes());
-
-        return "reporte"; // Retorna la plantilla templates/reporte.html
+        return "reporte";
     }
 
-    // --- API PARA DIBUJAR GRÁFICOS EN LA VISTA ---
     @GetMapping("/api/reportes/ventas-diarias")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> obtenerVentasDiariasApi(
@@ -46,10 +46,14 @@ public class ReporteController {
         return ResponseEntity.ok(ventaService.obtenerReporteVentasPorPeriodo(periodo));
     }
 
-    // --- EXPORTACIÓN A EXCEL ---
     @GetMapping("/reporte/exportar/excel")
-    public ResponseEntity<InputStreamResource> exportarExcel() throws IOException {
-        ByteArrayInputStream stream = reporteExportService.generarExcelVentas();
+    public ResponseEntity<InputStreamResource> exportarExcel(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin,
+            @RequestParam(defaultValue = "REGISTRADA") String estado,
+            @RequestParam(required = false) List<String> cols) throws IOException {
+
+        ByteArrayInputStream stream = reporteExportService.generarExcelVentas(inicio, fin, estado, cols);
         HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Disposition", "attachment; filename=reporte_ventas.xlsx");
 
@@ -59,12 +63,15 @@ public class ReporteController {
                 .body(new InputStreamResource(stream));
     }
 
-    // --- EXPORTACIÓN A PDF ---
     @GetMapping("/reporte/exportar/pdf")
-    public ResponseEntity<InputStreamResource> exportarPdf() {
-        ByteArrayInputStream stream = reporteExportService.generarPdfVentas();
-        HttpHeaders headers = new HttpHeaders();
+    public ResponseEntity<InputStreamResource> exportarPdf(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin,
+            @RequestParam(defaultValue = "REGISTRADA") String estado,
+            @RequestParam(required = false) List<String> cols) {
 
+        ByteArrayInputStream stream = reporteExportService.generarPdfVentas(inicio, fin, estado, cols);
+        HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Disposition", "attachment; filename=reporte_ventas.pdf");
 
         return ResponseEntity.ok()
@@ -73,10 +80,14 @@ public class ReporteController {
                 .body(new InputStreamResource(stream));
     }
 
-    // --- EXPORTACIÓN A CSV ---
     @GetMapping("/reporte/exportar/csv")
-    public ResponseEntity<InputStreamResource> exportarCsv() throws IOException {
-        ByteArrayInputStream stream = reporteExportService.generarCsvVentas();
+    public ResponseEntity<InputStreamResource> exportarCsv(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin,
+            @RequestParam(defaultValue = "REGISTRADA") String estado,
+            @RequestParam(required = false) List<String> cols) throws IOException {
+
+        ByteArrayInputStream stream = reporteExportService.generarCsvVentas(inicio, fin, estado, cols);
         HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Disposition", "attachment; filename=reporte_ventas.csv");
 

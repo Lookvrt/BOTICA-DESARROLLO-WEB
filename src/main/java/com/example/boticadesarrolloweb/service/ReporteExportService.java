@@ -1,9 +1,8 @@
 package com.example.boticadesarrolloweb.service;
 
 import com.example.boticadesarrolloweb.entity.VentaEntity;
+import com.example.boticadesarrolloweb.enums.EstadoVenta;
 import com.example.boticadesarrolloweb.repository.VentaRepository;
-
-// Importaciones específicas de OpenPDF (Para PDF)
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Element;
@@ -14,28 +13,35 @@ import com.lowagie.text.Phrase;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
-
-// Importaciones específicas de Apache POI (Para Excel)
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-
-// Importaciones específicas de Apache Commons CSV
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
-
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.awt.Color;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.OutputStreamWriter;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -43,25 +49,92 @@ public class ReporteExportService {
 
     private final VentaRepository ventaRepository;
 
+    private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+    // Catálogo ordenado de columnas disponibles
+    private static final Map<String, String> CATALOGO_COLUMNAS = new LinkedHashMap<>() {{
+        put("id", "ID Venta");
+        put("fecha", "Fecha y Hora");
+        put("comprobante", "Comprobante");
+        put("metodoPago", "Método de Pago");
+        put("vendedor", "Vendedor");
+        put("total", "Total (S/)");
+        put("estado", "Estado");
+    }};
+
+    private List<String> resolverColumnas(List<String> columnasSolicitadas) {
+        if (columnasSolicitadas == null || columnasSolicitadas.isEmpty()) {
+            return List.of("id", "fecha", "comprobante", "metodoPago", "total", "estado");
+        }
+        List<String> validas = CATALOGO_COLUMNAS.keySet().stream()
+                .filter(columnasSolicitadas::contains)
+                .toList();
+        return validas.isEmpty() ? List.of("id", "fecha", "comprobante", "total") : validas;
+    }
+
+    private List<VentaEntity> consultarVentasFiltradas(LocalDate inicio, LocalDate fin, String estadoStr) {
+        EstadoVenta estadoFiltro = null;
+        if (estadoStr != null && !estadoStr.equalsIgnoreCase("TODAS")) {
+            try {
+                estadoFiltro = EstadoVenta.valueOf(estadoStr.toUpperCase());
+            } catch (IllegalArgumentException ignored) {
+                estadoFiltro = EstadoVenta.REGISTRADA;
+            }
+        }
+        LocalDateTime fechaInicio = (inicio != null) ? inicio.atStartOfDay() : null;
+        LocalDateTime fechaFin = (fin != null) ? fin.atTime(LocalTime.MAX) : null;
+
+        return ventaRepository.buscarVentasParaReporte(estadoFiltro, fechaInicio, fechaFin);
+    }
+
+    private String obtenerValorTexto(VentaEntity v, String claveColumna) {
+        return switch (claveColumna) {
+            case "id" -> String.valueOf(v.getIdVenta());
+            case "fecha" -> v.getFechaVenta() != null ? v.getFechaVenta().format(FORMATO_FECHA) : "-";
+            case "comprobante" -> {
+                String tipo = v.getTipoComprobante() != null ? v.getTipoComprobante() : "";
+                String num = v.getNumeroComprobante() != null ? v.getNumeroComprobante() : "";
+                String combinado = (tipo + " " + num).trim();
+                yield combinado.isEmpty() ? "-" : combinado;
+            }
+            case "metodoPago" -> v.getMetodoPago() != null ? v.getMetodoPago().name() : "-";
+            case "vendedor" -> v.getUsuario() != null
+                    ? (v.getUsuario().getNombres() + " " + v.getUsuario().getApellidos()).trim()
+                    : "-";
+            case "total" -> v.getTotal() != null ? String.format(Locale.US, "%.2f", v.getTotal()) : "0.00";
+            case "estado" -> v.getEstado() != null ? v.getEstado().name() : "-";
+            default -> "-";
+        };
+    }
+
+    private BigDecimal calcularTotalRegistradas(List<VentaEntity> ventas) {
+        return ventas.stream()
+                .filter(v -> v.getEstado() == EstadoVenta.REGISTRADA && v.getTotal() != null)
+                .map(VentaEntity::getTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
     // --- 1. EXPORTAR A EXCEL (Apache POI) ---
-    public ByteArrayInputStream generarExcelVentas() throws IOException {
-        List<VentaEntity> ventas = ventaRepository.findAll();
+    @Transactional(readOnly = true)
+    public ByteArrayInputStream generarExcelVentas(LocalDate inicio, LocalDate fin, String estado, List<String> cols) throws IOException {
+        List<VentaEntity> ventas = consultarVentasFiltradas(inicio, fin, estado);
+        List<String> columnasActivas = resolverColumnas(cols);
 
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet("Reporte de Ventas");
 
-            // Estilo de Cabecera especificando org.apache.poi.ss.usermodel.Font para evitar conflictos
             CellStyle headerStyle = workbook.createCellStyle();
             org.apache.poi.ss.usermodel.Font headerFont = workbook.createFont();
             headerFont.setBold(true);
             headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-            // Cabeceras de tabla Excel
+            // Cabeceras dinámicas
             Row headerRow = sheet.createRow(0);
-            String[] columnas = {"ID Venta", "Comprobante", "Número", "Método Pago", "Total", "Estado"};
-            for (int i = 0; i < columnas.length; i++) {
+            for (int i = 0; i < columnasActivas.size(); i++) {
                 Cell cell = headerRow.createCell(i);
-                cell.setCellValue(columnas[i]);
+                cell.setCellValue(CATALOGO_COLUMNAS.get(columnasActivas.get(i)));
                 cell.setCellStyle(headerStyle);
             }
 
@@ -69,16 +142,31 @@ public class ReporteExportService {
             int rowIdx = 1;
             for (VentaEntity v : ventas) {
                 Row row = sheet.createRow(rowIdx++);
-                row.createCell(0).setCellValue(v.getIdVenta());
-                row.createCell(1).setCellValue(v.getTipoComprobante() != null ? v.getTipoComprobante() : "-");
-                row.createCell(2).setCellValue(v.getNumeroComprobante() != null ? v.getNumeroComprobante() : "-");
-                row.createCell(3).setCellValue(v.getMetodoPago() != null ? v.getMetodoPago().name() : "-");
-                row.createCell(4).setCellValue(v.getTotal() != null ? v.getTotal().doubleValue() : 0.0);
-                row.createCell(5).setCellValue(v.getEstado() != null ? v.getEstado().name() : "-");
+                for (int i = 0; i < columnasActivas.size(); i++) {
+                    String colKey = columnasActivas.get(i);
+                    Cell cell = row.createCell(i);
+                    if ("total".equals(colKey)) {
+                        cell.setCellValue(v.getTotal() != null ? v.getTotal().doubleValue() : 0.0);
+                    } else {
+                        cell.setCellValue(obtenerValorTexto(v, colKey));
+                    }
+                }
             }
 
-            // Autoajustar ancho de columnas
-            for (int i = 0; i < columnas.length; i++) {
+            // Fila de total general si se incluyó la columna "total"
+            int idxTotal = columnasActivas.indexOf("total");
+            if (idxTotal != -1) {
+                Row totalRow = sheet.createRow(rowIdx);
+                Cell labelCell = totalRow.createCell(Math.max(0, idxTotal - 1));
+                labelCell.setCellValue("TOTAL REGISTRADAS:");
+                labelCell.setCellStyle(headerStyle);
+
+                Cell valCell = totalRow.createCell(idxTotal);
+                valCell.setCellValue(calcularTotalRegistradas(ventas).doubleValue());
+                valCell.setCellStyle(headerStyle);
+            }
+
+            for (int i = 0; i < columnasActivas.size(); i++) {
                 sheet.autoSizeColumn(i);
             }
 
@@ -88,44 +176,69 @@ public class ReporteExportService {
     }
 
     // --- 2. EXPORTAR A PDF (OpenPDF) ---
-    public ByteArrayInputStream generarPdfVentas() {
-        List<VentaEntity> ventas = ventaRepository.findAll();
-        Document document = new Document(PageSize.A4);
+    @Transactional(readOnly = true)
+    public ByteArrayInputStream generarPdfVentas(LocalDate inicio, LocalDate fin, String estado, List<String> cols) {
+        List<VentaEntity> ventas = consultarVentasFiltradas(inicio, fin, estado);
+        List<String> columnasActivas = resolverColumnas(cols);
+
+        Document document = new Document(columnasActivas.size() > 5 ? PageSize.A4.rotate() : PageSize.A4);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         try {
             PdfWriter.getInstance(document, out);
             document.open();
 
-            // Fuente del Título especificando com.lowagie.text.Font para evitar conflictos
-            com.lowagie.text.Font fontTitle = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18, Color.BLUE);
-            Paragraph title = new Paragraph("Reporte General de Ventas - Botica Ahorro y Salud", fontTitle);
+            com.lowagie.text.Font fontTitle = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16, new Color(25, 135, 84));
+            Paragraph title = new Paragraph("Reporte de Ventas - Botica Ahorro y Salud", fontTitle);
             title.setAlignment(Element.ALIGN_CENTER);
             document.add(title);
-            document.add(new Paragraph(" ")); // Espaciador
 
-            PdfPTable table = new PdfPTable(5);
+            com.lowagie.text.Font fontSub = FontFactory.getFont(FontFactory.HELVETICA, 10, Color.DARK_GRAY);
+            String rangoTexto = (inicio != null || fin != null)
+                    ? "Periodo: " + (inicio != null ? inicio : "Inicio") + " al " + (fin != null ? fin : "Actualidad")
+                    : "Periodo: Historial completo";
+            Paragraph sub = new Paragraph(rangoTexto + " | Filtro estado: " + estado, fontSub);
+            sub.setAlignment(Element.ALIGN_CENTER);
+            sub.setSpacingAfter(12f);
+            document.add(sub);
+
+            PdfPTable table = new PdfPTable(columnasActivas.size());
             table.setWidthPercentage(100);
 
-            // Cabeceras de la Tabla PDF
-            String[] headers = {"ID", "Comprobante", "Método Pago", "Total (S/)", "Estado"};
-            for (String h : headers) {
-                PdfPCell cell = new PdfPCell(new Phrase(h));
-                cell.setBackgroundColor(Color.LIGHT_GRAY);
+            com.lowagie.text.Font fontHeader = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, Color.WHITE);
+            for (String colKey : columnasActivas) {
+                PdfPCell cell = new PdfPCell(new Phrase(CATALOGO_COLUMNAS.get(colKey), fontHeader));
+                cell.setBackgroundColor(new Color(33, 37, 41));
                 cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                cell.setPadding(6f);
                 table.addCell(cell);
             }
 
-            // Filas de datos
+            com.lowagie.text.Font fontCell = FontFactory.getFont(FontFactory.HELVETICA, 9, Color.BLACK);
             for (VentaEntity v : ventas) {
-                table.addCell(String.valueOf(v.getIdVenta()));
-                table.addCell(v.getTipoComprobante() != null ? v.getTipoComprobante() : "-");
-                table.addCell(v.getMetodoPago() != null ? v.getMetodoPago().name() : "-");
-                table.addCell(v.getTotal() != null ? v.getTotal().toString() : "0.00");
-                table.addCell(v.getEstado() != null ? v.getEstado().name() : "-");
+                for (String colKey : columnasActivas) {
+                    PdfPCell cell = new PdfPCell(new Phrase(obtenerValorTexto(v, colKey), fontCell));
+                    cell.setPadding(5f);
+                    if ("total".equals(colKey)) {
+                        cell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+                    }
+                    table.addCell(cell);
+                }
             }
 
             document.add(table);
+
+            if (columnasActivas.contains("total")) {
+                com.lowagie.text.Font fontTotal = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11, Color.BLACK);
+                Paragraph totalPar = new Paragraph(
+                        "Total Ventas Registradas: S/ " + String.format(Locale.US, "%.2f", calcularTotalRegistradas(ventas)),
+                        fontTotal
+                );
+                totalPar.setAlignment(Element.ALIGN_RIGHT);
+                totalPar.setSpacingBefore(10f);
+                document.add(totalPar);
+            }
+
             document.close();
         } catch (DocumentException e) {
             e.printStackTrace();
@@ -135,19 +248,25 @@ public class ReporteExportService {
     }
 
     // --- 3. EXPORTAR A CSV (Apache Commons CSV) ---
-    public ByteArrayInputStream generarCsvVentas() throws IOException {
-        List<VentaEntity> ventas = ventaRepository.findAll();
+    @Transactional(readOnly = true)
+    public ByteArrayInputStream generarCsvVentas(LocalDate inicio, LocalDate fin, String estado, List<String> cols) throws IOException {
+        List<VentaEntity> ventas = consultarVentasFiltradas(inicio, fin, estado);
+        List<String> columnasActivas = resolverColumnas(cols);
+
+        String[] headers = columnasActivas.stream()
+                .map(CATALOGO_COLUMNAS::get)
+                .toArray(String[]::new);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try (CSVPrinter csvPrinter = new CSVPrinter(new PrintWriter(out), CSVFormat.DEFAULT.builder().setHeader("ID", "Comprobante", "MetodoPago", "Total", "Estado").build())) {
+        try (CSVPrinter csvPrinter = new CSVPrinter(
+                new OutputStreamWriter(out, StandardCharsets.UTF_8),
+                CSVFormat.DEFAULT.builder().setHeader(headers).build())) {
+
             for (VentaEntity v : ventas) {
-                csvPrinter.printRecord(
-                        v.getIdVenta(),
-                        v.getTipoComprobante(),
-                        v.getMetodoPago() != null ? v.getMetodoPago().name() : "-",
-                        v.getTotal(),
-                        v.getEstado() != null ? v.getEstado().name() : "-"
-                );
+                List<String> fila = columnasActivas.stream()
+                        .map(colKey -> obtenerValorTexto(v, colKey))
+                        .toList();
+                csvPrinter.printRecord(fila);
             }
             csvPrinter.flush();
             return new ByteArrayInputStream(out.toByteArray());

@@ -116,46 +116,157 @@
             </div>
         </div>
 
-        <!-- Seccion de Exportación de Reportes (Alineado con el ancho de los graficos) -->
+        <!-- Tarjeta de Exportación de Reportes -->
         <div class="card border-0 p-3 shadow-sm bg-white rounded-3 mb-4">
-            <div class="d-flex align-items-center mb-3">
-                <div class="d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-3 me-2" style="width: 38px; height: 38px;">
-                    <i class="bi bi-download fs-5"></i>
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <div class="d-flex align-items-center">
+                    <div class="d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-3 me-2" style="width: 38px; height: 38px;">
+                        <i class="bi bi-download fs-5"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-0 text-dark">Exportar Reportes del Sistema</h6>
+                        <small class="text-muted">Descarga de datos consolidados en diferentes formatos</small>
+                    </div>
                 </div>
-                <div>
-                    <h6 class="fw-bold mb-0 text-dark">Exportar Reportes del Sistema</h6>
-                    <small class="text-muted">Descarga de datos consolidados en diferentes formatos</small>
+
+                <!-- Apartado derecho: Indicador de filtro activo + Botón Modal -->
+                <div class="d-flex align-items-center gap-2">
+            <span id="badgeResumenExport" class="badge bg-light text-secondary border fw-normal py-2 px-3">
+                Registradas · Todo el historial · 6 columnas
+            </span>
+                    <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
+                            data-bs-toggle="modal" data-bs-target="#modalConfigExport">
+                        <i class="bi bi-sliders"></i>
+                        <span>Personalizar</span>
+                    </button>
                 </div>
             </div>
 
             <div class="row g-3">
-                <!-- Botón Exportar Excel -->
                 <div class="col-12 col-md-4">
-                    <a th:href="@{/reporte/exportar/excel}"
-                       id="btnExportExcel"
+                    <a th:href="@{/reporte/exportar/excel}" id="linkExportExcel"
                        class="btn w-100 py-3 fw-bold bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-3 d-flex justify-content-center align-items-center gap-2 shadow-sm btn-export-hover">
                         <i class="bi bi-file-earmark-excel-fill fs-4"></i>
                         <span>Exportar a Excel</span>
                     </a>
                 </div>
 
-                <!-- Botón Exportar PDF -->
                 <div class="col-12 col-md-4">
-                    <a th:href="@{/reporte/exportar/pdf}"
+                    <a th:href="@{/reporte/exportar/pdf}" id="linkExportPDF"
                        class="btn w-100 py-3 fw-bold bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-3 d-flex justify-content-center align-items-center gap-2 shadow-sm btn-export-hover">
                         <i class="bi bi-file-earmark-pdf-fill fs-4"></i>
                         <span>Exportar a PDF</span>
                     </a>
                 </div>
 
-                <!-- Botón Exportar CSV -->
                 <div class="col-12 col-md-4">
-                    <a th:href="@{/reporte/exportar/csv}"
-                       id="btnExportCSV"
+                    <a th:href="@{/reporte/exportar/csv}" id="linkExportCSV"
                        class="btn w-100 py-3 fw-bold bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-3 d-flex justify-content-center align-items-center gap-2 shadow-sm btn-export-hover">
                         <i class="bi bi-filetype-csv fs-4"></i>
                         <span>Exportar a CSV</span>
                     </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Personalizar Exportación -->
+        <div class="modal fade" id="modalConfigExport" tabindex="-1" aria-labelledby="modalConfigExportLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header border-bottom-0 pb-0">
+                        <h5 class="modal-title fw-bold" id="modalConfigExportLabel">
+                            <i class="bi bi-sliders text-primary me-2"></i>Personalizar Exportación
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- 1. Rango de fechas -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-uppercase text-muted">1. Rango de fechas</label>
+                            <div class="btn-group btn-group-sm w-100 mb-2" role="group" id="presetsFechaExport">
+                                <button type="button" class="btn btn-outline-primary active" data-preset="todo">Todo</button>
+                                <button type="button" class="btn btn-outline-primary" data-preset="hoy">Hoy</button>
+                                <button type="button" class="btn btn-outline-primary" data-preset="semana">7 días</button>
+                                <button type="button" class="btn btn-outline-primary" data-preset="mes">Este mes</button>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label for="exportFechaInicio" class="form-label small mb-1">Desde</label>
+                                    <input type="date" class="form-control form-control-sm" id="exportFechaInicio">
+                                </div>
+                                <div class="col-6">
+                                    <label for="exportFechaFin" class="form-label small mb-1">Hasta</label>
+                                    <input type="date" class="form-control form-control-sm" id="exportFechaFin">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Estado de ventas -->
+                        <div class="mb-3">
+                            <label for="exportEstado" class="form-label fw-semibold small text-uppercase text-muted">2. Estado de las ventas</label>
+                            <select class="form-select form-select-sm" id="exportEstado">
+                                <option value="REGISTRADA" selected>Solo Registradas</option>
+                                <option value="ANULADA">Solo Anuladas</option>
+                                <option value="TODAS">Todas (Registradas y Anuladas)</option>
+                            </select>
+                        </div>
+
+                        <!-- 3. Columnas a incluir -->
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <label class="form-label fw-semibold small text-uppercase text-muted mb-0">3. Columnas a mostrar</label>
+                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" id="btnToggleCols">Marcar todas</button>
+                            </div>
+                            <div class="row g-2 border rounded-3 p-2 bg-light mx-0">
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-col-check" type="checkbox" value="id" id="colId" checked>
+                                        <label class="form-check-label small" for="colId">ID Venta</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-col-check" type="checkbox" value="fecha" id="colFecha" checked>
+                                        <label class="form-check-label small" for="colFecha">Fecha y Hora</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-col-check" type="checkbox" value="comprobante" id="colComp" checked>
+                                        <label class="form-check-label small" for="colComp">Comprobante</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-col-check" type="checkbox" value="metodoPago" id="colPago" checked>
+                                        <label class="form-check-label small" for="colPago">Método de Pago</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-col-check" type="checkbox" value="vendedor" id="colVend">
+                                        <label class="form-check-label small" for="colVend">Vendedor</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-col-check" type="checkbox" value="total" id="colTotal" checked>
+                                        <label class="form-check-label small" for="colTotal">Total (S/)</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-col-check" type="checkbox" value="estado" id="colEstado" checked>
+                                        <label class="form-check-label small" for="colEstado">Estado</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 pt-0">
+                        <button type="button" class="btn btn-light btn-sm" id="btnResetExportConfig">Restablecer</button>
+                        <button type="button" class="btn btn-primary btn-sm px-3" id="btnAplicarExportConfig">Aplicar configuración</button>
+                    </div>
                 </div>
             </div>
         </div>

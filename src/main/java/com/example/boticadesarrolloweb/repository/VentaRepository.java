@@ -60,4 +60,14 @@ public interface VentaRepository extends JpaRepository<VentaEntity, Integer> {
             "GROUP BY DATE(v.fecha_venta) " +
             "ORDER BY fecha ASC", nativeQuery = true)
     List<Object[]> obtenerVentasDiariasDesde(@Param("desde") LocalDateTime desde);
+
+    @Query("SELECT v FROM VentaEntity v LEFT JOIN FETCH v.usuario " +
+            "WHERE (:estado IS NULL OR v.estado = :estado) " +
+            "AND (:inicio IS NULL OR v.fechaVenta >= :inicio) " +
+            "AND (:fin IS NULL OR v.fechaVenta <= :fin) " +
+            "ORDER BY v.fechaVenta DESC")
+    List<VentaEntity> buscarVentasParaReporte(
+            @Param("estado") EstadoVenta estado,
+            @Param("inicio") LocalDateTime inicio,
+            @Param("fin") LocalDateTime fin);
 }
