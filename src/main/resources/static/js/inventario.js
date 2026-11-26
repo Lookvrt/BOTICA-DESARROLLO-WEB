@@ -1,3 +1,7 @@
+// Escapa texto de la BD antes de insertarlo con innerHTML (evita XSS almacenado)
+const escapar = (s) => String(s ?? '').replace(/[&<>"']/g, c =>
+    ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+
 // Generador de código sugerido e.g. MED010
 function generarCodigoSugerido() {
     const aleatorio = Math.floor(100 + Math.random() * 900);
@@ -117,7 +121,7 @@ function abrirModalLotes(idProducto, nombreProducto) {
 
                 const fila = `
                         <tr>
-                            <td class="fw-bold">${l.numeroLote || '-'}</td>
+                            <td class="fw-bold">${escapar(l.numeroLote) || '-'}</td>
                             <td class="text-muted small">${l.fechaFabricacion || '-'}</td>
                             <td class="fw-semibold">${l.fechaVencimiento || '-'}</td>
                             <td class="text-center fw-bold fs-6">${l.stockActual}</td>

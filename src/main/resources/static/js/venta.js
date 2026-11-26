@@ -1,4 +1,8 @@
 document.addEventListener("DOMContentLoaded", function () {
+    // Escapa texto de la BD antes de insertarlo con innerHTML (evita XSS almacenado)
+    const escapar = (s) => String(s ?? '').replace(/[&<>"']/g, c =>
+        ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+
     // --- Referencias del DOM: Catálogo y Búsqueda ---
     const inputBuscar = document.getElementById("buscarProductoVenta");
     const btnLimpiarBusqueda = document.getElementById("btnLimpiarBusquedaVenta");
@@ -263,7 +267,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             tr.innerHTML = `
                 <td>
-                    <div class="fw-semibold text-dark small">${item.nombre}</div>
+                    <div class="fw-semibold text-dark small">${escapar(item.nombre)}</div>
                     <div class="text-muted" style="font-size: 0.75rem;">
                         ${formatearMoneda(item.precio)} c/u
                         ${item.requiereReceta ? '<span class="badge bg-danger bg-opacity-10 text-danger ms-1">Receta</span>' : ''}
