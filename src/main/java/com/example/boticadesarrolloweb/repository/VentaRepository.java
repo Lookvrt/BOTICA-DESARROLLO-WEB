@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface VentaRepository extends JpaRepository<VentaEntity, Integer> {
 
@@ -32,8 +33,11 @@ public interface VentaRepository extends JpaRepository<VentaEntity, Integer> {
     List<VentaEntity> buscarParaListado(@Param("q") String q);
 
     /** Último número de una serie (p. ej. 'F001-'); el relleno con ceros hace que MAX funcione como texto. */
-    @Query("SELECT MAX(v.numeroComprobante) FROM VentaEntity v WHERE v.numeroComprobante LIKE CONCAT(:serie, '%')")
-    String ultimoNumeroDeSerie(@Param("serie") String serie);
+    @Query(value = "SELECT v.numero_comprobante FROM ventas v " +
+            "WHERE v.numero_comprobante LIKE CONCAT(:serie, '%') " +
+            "ORDER BY LENGTH(v.numero_comprobante) DESC, v.numero_comprobante DESC LIMIT 1",
+            nativeQuery = true)
+    Optional<String> ultimoNumeroDeSerie(@Param("serie") String serie);
 
     List<VentaEntity> findTop7ByEstadoOrderByFechaVentaDesc(EstadoVenta estado);
 

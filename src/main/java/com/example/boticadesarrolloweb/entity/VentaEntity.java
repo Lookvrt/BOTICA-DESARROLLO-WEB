@@ -37,7 +37,7 @@ public class VentaEntity {
     @Column(name = "tipo_comprobante", length = 30)
     private String tipoComprobante;
 
-    @Column(name = "numero_comprobante", length = 50)
+    @Column(name = "numero_comprobante", length = 50, unique = true)
     private String numeroComprobante;
 
     @Enumerated(EnumType.STRING)

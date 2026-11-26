@@ -10,6 +10,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -27,6 +30,8 @@ public class GestionVentaService {
 
     public static final String TIPO_FACTURA = "FACTURA";
     public static final String SERIE_FACTURA = "F001-";
+    private static final int MAX_INTENTOS_FACTURA = 5;
+    private final PlatformTransactionManager transactionManager;
 
     private final VentaRepository ventaRepository;
     private final DetalleVentaRepository detalleVentaRepository;
@@ -119,8 +124,27 @@ public class GestionVentaService {
     }
 
     /** Registra una factura nueva o guarda los cambios de una venta existente. */
-    @Transactional
     public VentaEntity guardar(Venta form, Integer idUsuario) {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        boolean esNueva = form.getIdVenta() == null;
+        for (int intento = 1; ; intento++) {
+            try {
+                return tx.execute(status -> guardarEnTransaccion(form, idUsuario));
+            } catch (DataIntegrityViolationException e) {
+                // Solo las facturas nuevas pueden chocar por el correlativo (unique en numero_comprobante)
+                if (!esNueva) {
+                    throw e;
+                }
+                if (intento >= MAX_INTENTOS_FACTURA) {
+                    log.error("No se pudo asignar un correlativo de factura tras {} intentos", intento, e);
+                    throw new VentaException("No se pudo asignar el número de factura. Intenta nuevamente.");
+                }
+                log.warn("Correlativo de factura duplicado (intento {}); se reintenta", intento);
+            }
+        }
+    }
+
+    private VentaEntity guardarEnTransaccion(Venta form, Integer idUsuario) {
         // Venta antigua sin productos: si no se agregan productos, solo se actualiza la cabecera y conserva su total
         if (form.getIdVenta() != null && sinLineas(form) && esVentaSinProductos(form.getIdVenta())) {
             VentaEntity venta = buscar(form.getIdVenta());
@@ -136,7 +160,7 @@ public class GestionVentaService {
         if (form.getIdVenta() == null) {
             UsuarioEntity usuario = usuarioRepository.findById(idUsuario)
                     .orElseThrow(() -> new VentaException("No se pudo identificar al usuario que realiza la venta."));
-            VentaEntity venta = ventaRepository.save(VentaEntity.builder()
+            VentaEntity venta = ventaRepository.saveAndFlush(VentaEntity.builder()
                     .usuario(usuario)
                     .cliente(clienteObligatorio(form.getIdCliente()))
                     .tipoComprobante(TIPO_FACTURA)
@@ -245,7 +269,7 @@ public class GestionVentaService {
 
     /** Correlativo de la serie de facturas: F001-00000001, F001-00000002, ... */
     private String siguienteNumeroFactura() {
-        String ultimo = ventaRepository.ultimoNumeroDeSerie(SERIE_FACTURA);
+        String ultimo = ventaRepository.ultimoNumeroDeSerie(SERIE_FACTURA).orElse(null);
         int siguiente = 1;
         if (ultimo != null) {
             try {
