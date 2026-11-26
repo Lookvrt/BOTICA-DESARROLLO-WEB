@@ -3,6 +3,7 @@ package com.example.boticadesarrolloweb.entity;
 import com.example.boticadesarrolloweb.enums.Rol;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 @Builder
 @Entity
 @Table(name = "usuarios")
+@DynamicUpdate
 @SQLDelete(sql = "UPDATE usuarios SET estado = 0 WHERE id_usuario = ?")
 @SQLRestriction("estado = 1")
 public class UsuarioEntity {
@@ -54,6 +56,11 @@ public class UsuarioEntity {
 
     @Column(name = "otp_expiracion")
     private LocalDateTime otpExpiracion;
+
+    /** Intentos ya consumidos del OTP vigente. Lo incrementa la BD de forma atómica (ver UsuarioRepository). */
+    @Column(name = "otp_intentos")
+    @Builder.Default
+    private Integer otpIntentos = 0;
 
     // --- Seguridad: Protección contra Fuerza Bruta (PS-02 / HZ-01) ---
     @Column(name = "intentos_fallidos")

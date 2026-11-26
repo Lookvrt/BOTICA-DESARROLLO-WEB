@@ -55,6 +55,8 @@ public class RecuperarClaveController {
             model.addAttribute("errorMsg", "La contraseña debe tener al menos 6 caracteres.");
         } else if ("sesion_expirada".equalsIgnoreCase(error)) {
             model.addAttribute("errorMsg", "La sesión del proceso ha expirado. Por favor, inicia el proceso nuevamente.");
+        } else if ("espera".equalsIgnoreCase(error)) {
+            model.addAttribute("errorMsg", "Espera un minuto antes de solicitar otro código.");
         }
 
         // Manejo de mensajes de éxito
@@ -156,7 +158,9 @@ public class RecuperarClaveController {
             return "redirect:/recuperar-clave?error=sesion_expirada";
         }
 
-        otpService.generarYEnviarOtpRecuperacion(usuario);
+        if (!otpService.generarYEnviarOtpRecuperacion(usuario)) {
+            return "redirect:/recuperar-clave?error=espera";
+        }
         return "redirect:/recuperar-clave?reenviado=true";
     }
 

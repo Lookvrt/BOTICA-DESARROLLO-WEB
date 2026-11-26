@@ -223,7 +223,9 @@ public class LoginController {
         String emailMasked = enmascararEmail(usuario.getEmail());
         model.addAttribute("emailMasked", emailMasked);
 
-        if (error != null) {
+        if ("espera".equals(error)) {
+            model.addAttribute("errorMsg", "Espera un minuto antes de solicitar otro código.");
+        } else if (error != null) {
             model.addAttribute("errorMsg", "Código incorrecto o expirado. Inténtalo de nuevo.");
         }
         if (reenvio != null) {
@@ -299,7 +301,9 @@ public class LoginController {
             return "redirect:/login";
         }
 
-        otpService.generarYEnviarOtp(usuario);
+        if (!otpService.generarYEnviarOtp(usuario)) {
+            return "redirect:/verificar-otp?error=espera";
+        }
 
         return "redirect:/verificar-otp?reenvio=true";
     }

@@ -9,13 +9,19 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 /**
- * Servicio para gestión del OTP (One-Time Password) de doble autenticación.
- * Genera un código de 6 dígitos, lo guarda en BD con expiración de 5 minutos
- * y lo envía al email del usuario vía Gmail SMTP.
+ * Servicio para gestión del OTP (One-Time Password) de doble autenticación y recuperación de clave.
+ * Genera un código de 6 dígitos con expiración de 5 minutos y lo envía por email.
+ *
+ * Protecciones contra fuerza bruta (el contador vive en la BD, columna usuarios.otp_intentos):
+ * - Cada código admite como máximo {@value #MAX_INTENTOS_OTP} comprobaciones, incluso con peticiones simultáneas.
+ * - No se emite un OTP nuevo si el anterior se generó hace menos de 60 segundos.
  */
 @Slf4j
 @Service
@@ -24,6 +30,8 @@ public class OtpService {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final int OTP_DURACION_MINUTOS = 5;
+    private static final int MAX_INTENTOS_OTP = 5;
+    private static final Duration ESPERA_REENVIO = Duration.ofSeconds(60);
 
     private final JavaMailSender mailSender;
     private final UsuarioRepository usuarioRepository;
@@ -31,71 +39,96 @@ public class OtpService {
     @Value("${app.mail.from:seguridad@botica.com}")
     private String emailRemitente;
 
-    /**
-     * Genera un código numérico criptográficamente seguro de 6 dígitos (000000 - 999999).
-     */
+    /** Solo para desarrollo local: imprime el OTP en el log. Debe ser false en producción. */
+    @Value("${app.security.otp.log-codigo:false}")
+    private boolean logCodigo;
+
+    /** Genera un código numérico criptográficamente seguro de 6 dígitos (000000 - 999999). */
     private String generarCodigoOtp() {
-        int codigo = SECURE_RANDOM.nextInt(1_000_000);
-        return String.format("%06d", codigo);
+        return String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
+    }
+
+    /**
+     * Guarda un OTP nuevo para el usuario (con su contador de intentos en cero).
+     * Devuelve null, sin cambiar nada, si todavía rige el tiempo de espera desde el último código.
+     */
+    private String emitirOtp(UsuarioEntity usuario) {
+        if (enEsperaDeReenvio(usuario)) {
+            log.info("OTP no reenviado a '{}': aún rige el tiempo de espera.", usuario.getUsuario());
+            return null;
+        }
+        String otp = generarCodigoOtp();
+        LocalDateTime expiracion = LocalDateTime.now().plusMinutes(OTP_DURACION_MINUTOS);
+
+        usuarioRepository.guardarOtp(usuario.getIdUsuario(), otp, expiracion);
+
+        // Se refleja también en el objeto en memoria para quien lo siga usando en esta petición
+        usuario.setOtpCode(otp);
+        usuario.setOtpExpiracion(expiracion);
+        usuario.setOtpIntentos(0);
+        return otp;
+    }
+
+    /** El momento de emisión se deduce de la expiración (emisión = expiración − 5 min). */
+    private boolean enEsperaDeReenvio(UsuarioEntity usuario) {
+        if (usuario.getOtpExpiracion() == null) {
+            return false;
+        }
+        LocalDateTime emitidoEn = usuario.getOtpExpiracion().minusMinutes(OTP_DURACION_MINUTOS);
+        return LocalDateTime.now().isBefore(emitidoEn.plus(ESPERA_REENVIO));
     }
 
     /**
      * Genera un OTP de 6 dígitos, lo guarda en la BD y lo envía al email del usuario.
      *
-     * @param usuario entidad del usuario autenticado
+     * @return true si se emitió y envió un código nuevo; false si se omitió por el tiempo de espera
      */
-    public void generarYEnviarOtp(UsuarioEntity usuario) {
-        String otp = generarCodigoOtp();
-        LocalDateTime expiracion = LocalDateTime.now().plusMinutes(OTP_DURACION_MINUTOS);
-
-        // Guardar OTP en BD
-        usuario.setOtpCode(otp);
-        usuario.setOtpExpiracion(expiracion);
-        usuarioRepository.save(usuario);
-
-        // Enviar email de forma segura (sin bloquear el flujo si falla el SMTP)
-        try {
-            enviarEmail(usuario.getEmail(), usuario.getNombres(), otp);
-            log.info("📧 Email OTP enviado con éxito a: {}", usuario.getEmail());
-        } catch (Exception e) {
-            log.warn("⚠️ No se pudo enviar el email OTP (verifica credenciales SMTP en application.properties): {}", e.getMessage());
-        }
-
-        // Mostrar código en consola para desarrollo y pruebas del docente/equipo
-        log.info("=================================================");
-        log.info("🔐 [DESARROLLO] CÓDIGO OTP PARA '{}': {}", usuario.getUsuario(), otp);
-        log.info("=================================================");
-    }
-
-    /**
-     * Valida el código OTP ingresado por el usuario.
-     *
-     * @param usuario         entidad del usuario
-     * @param codigoIngresado código que el usuario escribió en el formulario
-     * @return true si el código es correcto y no ha expirado
-     */
-    public boolean validarOtp(UsuarioEntity usuario, String codigoIngresado) {
-        if (usuario.getOtpCode() == null || usuario.getOtpExpiracion() == null) {
+    public boolean generarYEnviarOtp(UsuarioEntity usuario) {
+        String otp = emitirOtp(usuario);
+        if (otp == null) {
             return false;
         }
 
-        boolean codigoCorrecto = usuario.getOtpCode().equals(codigoIngresado);
-        boolean noExpirado = LocalDateTime.now().isBefore(usuario.getOtpExpiracion());
-
-        if (codigoCorrecto && noExpirado) {
-            // Limpiar OTP tras uso exitoso
-            usuario.setOtpCode(null);
-            usuario.setOtpExpiracion(null);
-            usuarioRepository.save(usuario);
-            return true;
+        // Enviar email sin bloquear el flujo si falla el SMTP
+        try {
+            enviarEmail(usuario.getEmail(), usuario.getNombres(), otp);
+            log.info("Email OTP enviado a: {}", usuario.getEmail());
+        } catch (Exception e) {
+            log.warn("No se pudo enviar el email OTP (verifica credenciales SMTP): {}", e.getMessage());
         }
-
-        return false;
+        registrarCodigoEnLog(usuario, otp);
+        return true;
     }
 
     /**
-     * Envía el email con el código OTP al usuario.
+     * Valida el código OTP ingresado. Primero consume un intento de forma atómica en la BD y
+     * después compara en tiempo constante: un mismo código no admite más de
+     * {@value #MAX_INTENTOS_OTP} comprobaciones.
      */
+    public boolean validarOtp(UsuarioEntity usuario, String codigoIngresado) {
+        if (usuario.getOtpCode() == null || usuario.getOtpExpiracion() == null
+                || !LocalDateTime.now().isBefore(usuario.getOtpExpiracion())) {
+            return false;
+        }
+
+        if (usuarioRepository.consumirIntentoOtp(usuario.getIdUsuario(), MAX_INTENTOS_OTP) == 0) {
+            log.warn("Intentos de OTP agotados para '{}': debe solicitar un código nuevo.", usuario.getUsuario());
+            return false;
+        }
+
+        boolean coincide = codigoIngresado != null && MessageDigest.isEqual(
+                usuario.getOtpCode().getBytes(StandardCharsets.UTF_8),
+                codigoIngresado.getBytes(StandardCharsets.UTF_8));
+
+        if (coincide) {
+            usuarioRepository.limpiarOtp(usuario.getIdUsuario());
+            usuario.setOtpCode(null);
+            usuario.setOtpExpiracion(null);
+            usuario.setOtpIntentos(0);
+        }
+        return coincide;
+    }
+
     private void enviarEmail(String destinatario, String nombre, String otp) {
         SimpleMailMessage mensaje = new SimpleMailMessage();
         mensaje.setFrom(emailRemitente);
@@ -113,18 +146,15 @@ public class OtpService {
     }
 
     /**
-     * Genera un código OTP específicamente para la recuperación de contraseña,
-     * lo almacena en BD y lo envía al correo del usuario.
+     * Genera un OTP para la recuperación de contraseña y lo envía al correo del usuario.
      *
-     * @param usuario entidad del usuario que solicita recuperar su contraseña
+     * @return true si se emitió y envió un código nuevo; false si se omitió por el tiempo de espera
      */
-    public void generarYEnviarOtpRecuperacion(UsuarioEntity usuario) {
-        String otp = generarCodigoOtp();
-        LocalDateTime expiracion = LocalDateTime.now().plusMinutes(OTP_DURACION_MINUTOS);
-
-        usuario.setOtpCode(otp);
-        usuario.setOtpExpiracion(expiracion);
-        usuarioRepository.save(usuario);
+    public boolean generarYEnviarOtpRecuperacion(UsuarioEntity usuario) {
+        String otp = emitirOtp(usuario);
+        if (otp == null) {
+            return false;
+        }
 
         try {
             SimpleMailMessage mensaje = new SimpleMailMessage();
@@ -141,13 +171,17 @@ public class OtpService {
                             "— Equipo de Seguridad Botica Ahorro y Salud"
             );
             mailSender.send(mensaje);
-            log.info("📧 Email de recuperación OTP enviado con éxito a: {}", usuario.getEmail());
+            log.info("Email de recuperación OTP enviado a: {}", usuario.getEmail());
         } catch (Exception e) {
-            log.warn("⚠️ No se pudo enviar el email de recuperación OTP (revisa credenciales SMTP): {}", e.getMessage());
+            log.warn("No se pudo enviar el email de recuperación OTP (revisa credenciales SMTP): {}", e.getMessage());
         }
+        registrarCodigoEnLog(usuario, otp);
+        return true;
+    }
 
-        log.info("=================================================");
-        log.info("🔑 [RECUPERACIÓN] CÓDIGO OTP PARA '{}': {}", usuario.getUsuario(), otp);
-        log.info("=================================================");
+    private void registrarCodigoEnLog(UsuarioEntity usuario, String otp) {
+        if (logCodigo) {
+            log.info("[DESARROLLO] OTP para '{}': {}", usuario.getUsuario(), otp);
+        }
     }
 }
