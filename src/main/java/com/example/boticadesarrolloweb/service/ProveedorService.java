@@ -29,21 +29,32 @@ public class ProveedorService {
 
     @Transactional
     public ProveedorEntity guardarProveedor(Proveedor proveedor) {
+        String rucLimpio = (proveedor.getRuc() != null && !proveedor.getRuc().trim().isEmpty())
+                ? proveedor.getRuc().trim()
+                : null;
+
+        if (rucLimpio != null) {
+            boolean rucDuplicado = (proveedor.getIdProveedor() == null)
+                    ? proveedorRepository.existsByRuc(rucLimpio)
+                    : proveedorRepository.existsByRucAndIdProveedorNot(rucLimpio, proveedor.getIdProveedor());
+
+            if (rucDuplicado) {
+                throw new IllegalArgumentException("El RUC " + rucLimpio + " ya se encuentra registrado en otro proveedor.");
+            }
+        }
+
         ProveedorEntity entidad;
 
         if (proveedor.getIdProveedor() != null) {
-            entidad = proveedorRepository.findById(
-                    proveedor.getIdProveedor()
-            ).orElseThrow(() ->
-                    new RuntimeException("Proveedor no encontrado")
-            );
+            entidad = proveedorRepository.findById(proveedor.getIdProveedor())
+                    .orElseThrow(() -> new RuntimeException("Proveedor no encontrado"));
         } else {
             entidad = new ProveedorEntity();
             entidad.setEstado(1);
         }
 
-        entidad.setRazonSocial(proveedor.getRazonSocial());
-        entidad.setRuc(proveedor.getRuc());
+        entidad.setRazonSocial(proveedor.getRazonSocial().trim());
+        entidad.setRuc(rucLimpio);
         entidad.setDireccion(proveedor.getDireccion());
         entidad.setTelefono(proveedor.getTelefono());
         entidad.setCorreo(proveedor.getCorreo());
@@ -64,7 +75,6 @@ public class ProveedorService {
     @Transactional(readOnly = true)
     public ProveedorEntity buscarPorId(Integer id) {
         return proveedorRepository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("Proveedor no encontrado"));
+                .orElseThrow(() -> new RuntimeException("Proveedor no encontrado"));
     }
 }

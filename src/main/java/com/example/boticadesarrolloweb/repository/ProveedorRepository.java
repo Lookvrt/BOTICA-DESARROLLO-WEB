@@ -17,4 +17,8 @@ public interface ProveedorRepository extends JpaRepository<ProveedorEntity, Inte
             "CASE WHEN :orden = 'asc' OR :orden IS NULL OR :orden = '' THEN p.razonSocial END ASC")
     List<ProveedorEntity> buscarYOrdenarPorRazonSocial(@Param("query") String query,
                                                        @Param("orden") String orden);
+
+    boolean existsByRuc(String ruc);
+
+    boolean existsByRucAndIdProveedorNot(String ruc, Integer idProveedor);
 }

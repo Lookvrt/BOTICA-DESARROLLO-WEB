@@ -3,16 +3,16 @@ package com.example.boticadesarrolloweb.controller;
 import com.example.boticadesarrolloweb.entity.ProveedorEntity;
 import com.example.boticadesarrolloweb.model.Proveedor;
 import com.example.boticadesarrolloweb.service.ProveedorService;
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import jakarta.validation.Valid;
 
 @Controller
 public class ProveedoresController {
@@ -51,7 +51,15 @@ public class ProveedoresController {
         try {
             proveedorService.guardarProveedor(proveedor);
             redirectAttributes.addFlashAttribute(
-                    "mensaje", proveedor.getIdProveedor() == null ? "Proveedor registrado correctamente." : "Proveedor actualizado correctamente.");
+                    "mensaje", proveedor.getIdProveedor() == null
+                            ? "Proveedor registrado correctamente."
+                            : "Proveedor actualizado correctamente.");
+        } catch (IllegalArgumentException e) {
+            resultado.rejectValue("ruc", "duplicate.proveedor.ruc", e.getMessage());
+            model.addAttribute("proveedores", proveedorService.listarProveedores(null, "asc"));
+            model.addAttribute("modalAbrir", proveedor.getIdProveedor() == null ? "nuevo" : "editar");
+            model.addAttribute("error", e.getMessage());
+            return "proveedores";
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute(
                     "error", "Error al guardar proveedor: " + e.getMessage());

@@ -1,5 +1,6 @@
 package com.example.boticadesarrolloweb.model;
 
+import com.example.boticadesarrolloweb.validation.RucValido;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
@@ -15,7 +16,7 @@ public class Proveedor {
     @Size(max = 150, message = "La razón social no debe superar los 150 caracteres")
     private String razonSocial;
 
-    @Pattern(regexp = "^$|[0-9]{11}", message = "El RUC debe tener exactamente 11 dígitos numéricos o dejarse vacío")
+    @RucValido(message = "El RUC ingresado no es válido según SUNAT")
     private String ruc;
 
     @Size(max = 200, message = "La dirección no debe superar los 200 caracteres")
