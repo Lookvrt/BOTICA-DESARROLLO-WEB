@@ -11,6 +11,7 @@ import com.example.boticadesarrolloweb.service.ProveedorService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -82,7 +83,18 @@ public class ComprasController {
 
     @PostMapping("/compras/guardar")
     public String guardar(
-            @Valid @ModelAttribute("compra") Compra compra, BindingResult resultado, Model model, RedirectAttributes redirectAttributes) {
+            @Valid @ModelAttribute("compra") Compra compra, BindingResult resultado, Model model,
+            RedirectAttributes redirectAttributes, HttpSession session, Authentication authentication) {
+
+        // El responsable no viene del formulario: en una compra nueva es el usuario en sesión
+        // (en una edición el servicio conserva el original).
+        if (compra.getIdCompra() == null) {
+            try {
+                compra.setIdUsuario(resolverUsuario(session, authentication));
+            } catch (CompraException e) {
+                return volverAlFormulario(compra, model, e.getMessage());
+            }
+        }
 
         if (resultado.hasErrors()) {
             return volverAlFormulario(compra, model, "Revisa los datos ingresados en el formulario.");
@@ -92,7 +104,7 @@ public class ComprasController {
             CompraEntity guardada = compraService.guardarCompra(compra);
             redirectAttributes.addFlashAttribute("mensaje", compra.getIdCompra() == null
                     ? "Compra CMP-" + String.format("%03d", guardada.getIdCompra()) + " registrada: "
-                      + compra.getDetalles().size() + " producto(s) ingresaron al inventario."
+                    + compra.getDetalles().size() + " producto(s) ingresaron al inventario."
                     : "Compra actualizada correctamente.");
         } catch (CompraException e) {
             return volverAlFormulario(compra, model, e.getMessage());
@@ -103,6 +115,16 @@ public class ComprasController {
         }
 
         return "redirect:/compras";
+    }
+
+    private Integer resolverUsuario(HttpSession session, Authentication authentication) {
+        if (session.getAttribute("usuario_autenticado_id") instanceof Integer id) {
+            return id;
+        }
+        if (authentication == null) {
+            throw new CompraException("No se pudo identificar al usuario de la sesión.");
+        }
+        return compraService.idUsuarioDe(authentication.getName());
     }
 
     /** Vuelve a mostrar el modal con los datos ingresados (sin perder los productos agregados). */
@@ -130,9 +152,12 @@ public class ComprasController {
             cargarListas(model, null, "asc");
 
             return "compras";
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute(
-                    "error", "No se pudo cargar la compra: " + e.getMessage());
+        } catch (CompraException e) {
+            redirectAttributes.addFlashAttribute("error", "No se pudo cargar la compra: " + e.getMessage());
+            return "redirect:/compras";
+        } catch (RuntimeException e) {
+            log.error("Error al cargar la compra {}", id, e);
+            redirectAttributes.addFlashAttribute("error", "No se pudo cargar la compra. Intenta nuevamente.");
             return "redirect:/compras";
         }
     }
@@ -146,9 +171,12 @@ public class ComprasController {
             compraService.anularCompra(id);
             redirectAttributes.addFlashAttribute(
                     "mensaje", "Compra anulada correctamente. Su stock fue retirado del inventario.");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute(
-                    "error", "No se pudo anular la compra: " + e.getMessage());
+        } catch (CompraException | IllegalArgumentException | IllegalStateException e) {
+            // Mensajes de negocio (compra inexistente, ya anulada, lote con ventas...)
+            redirectAttributes.addFlashAttribute("error", "No se pudo anular la compra: " + e.getMessage());
+        } catch (RuntimeException e) {
+            log.error("Error al anular la compra {}", id, e);
+            redirectAttributes.addFlashAttribute("error", "No se pudo anular la compra. Intenta nuevamente.");
         }
 
         return "redirect:/compras";

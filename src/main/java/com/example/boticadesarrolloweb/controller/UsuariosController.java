@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -24,6 +25,15 @@ import java.util.List;
 public class UsuariosController {
 
     private final UsuarioService usuarioService;
+
+    /**
+     * Solo se aceptan del formulario los campos que el administrador realmente edita.
+     * Evita que se envíen a mano estado, otpCode, intentosFallidos, bloqueadoHasta, etc.
+     */
+    @InitBinder
+    public void restringirCamposEnlazables(WebDataBinder binder) {
+        binder.setAllowedFields("idUsuario", "nombres", "apellidos", "usuario", "email", "clave", "rol");
+    }
 
     // ─────────────────────────────────────────────────────────────
     // [1] Listar usuarios y búsqueda
@@ -96,10 +106,12 @@ public class UsuariosController {
                 redirectAttributes.addFlashAttribute("mensajeExito",
                         "Usuario '" + usuario.getUsuario() + "' actualizado exitosamente.");
             }
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("mensajeError", "Error al guardar usuario: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error al guardar usuario: {}", e.getMessage(), e);
             redirectAttributes.addFlashAttribute("mensajeError",
-                    "Error al guardar usuario: " + e.getMessage());
+                    "No se pudo guardar el usuario. Verifica los datos e intenta nuevamente.");
         }
 
         return "redirect:/usuarios";
@@ -124,8 +136,7 @@ public class UsuariosController {
             redirectAttributes.addFlashAttribute("mensajeExito", "Usuario eliminado correctamente.");
         } catch (Exception e) {
             log.error("Error al eliminar usuario: {}", e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("mensajeError",
-                    "No se pudo eliminar el usuario: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("mensajeError", "No se pudo eliminar el usuario.");
         }
 
         return "redirect:/usuarios";
@@ -140,10 +151,11 @@ public class UsuariosController {
         try {
             usuarioService.desbloquear(id);
             redirectAttributes.addFlashAttribute("mensajeExito", "Cuenta de usuario desbloqueada correctamente.");
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("mensajeError", "No se pudo desbloquear el usuario: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error al desbloquear usuario: {}", e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("mensajeError",
-                    "No se pudo desbloquear el usuario: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("mensajeError", "No se pudo desbloquear el usuario.");
         }
 
         return "redirect:/usuarios";

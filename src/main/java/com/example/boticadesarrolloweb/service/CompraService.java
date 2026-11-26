@@ -74,11 +74,20 @@ public class CompraService {
         return compraRepository.buscarYOrdenarPorProveedor(queryLimpia, orden, EstadoCompra.REGISTRADA);
     }
 
+    /** Id del usuario autenticado (por su nombre de usuario o correo), para registrar quién hace la compra. */
+    @Transactional(readOnly = true)
+    public Integer idUsuarioDe(String nombreAutenticacion) {
+        return usuarioRepository.findByUsuario(nombreAutenticacion)
+                .or(() -> usuarioRepository.findByEmail(nombreAutenticacion))
+                .map(UsuarioEntity::getIdUsuario)
+                .orElseThrow(() -> new CompraException("No se pudo identificar al usuario de la sesión."));
+    }
+
     @Transactional(readOnly = true)
     public CompraEntity buscarPorId(Integer id) {
         return compraRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Compra no encontrada"));
+                        new CompraException("Compra no encontrada"));
     }
 
     public List<ProveedorEntity> listarProveedores() {
@@ -275,6 +284,10 @@ public class CompraService {
         if (entidad.getEstado() == EstadoCompra.ANULADA) {
             throw new CompraException("No se puede editar una compra anulada.");
         }
+        // El responsable es quien registró la compra: no se reasigna desde el formulario
+        if (entidad.getUsuario() != null) {
+            compra.setIdUsuario(entidad.getUsuario().getIdUsuario());
+        }
         asignarCabecera(entidad, compra);
 
         Map<Integer, DetalleCompraEntity> existentes = new HashMap<>();
@@ -374,6 +387,9 @@ public class CompraService {
     private void asignarCabecera(CompraEntity entidad, Compra compra) {
         ProveedorEntity proveedor = proveedorRepository.findById(compra.getIdProveedor())
                 .orElseThrow(() -> new CompraException("Proveedor no encontrado."));
+        if (compra.getIdUsuario() == null) {
+            throw new CompraException("No se pudo identificar al usuario responsable de la compra.");
+        }
         UsuarioEntity usuario = usuarioRepository.findById(compra.getIdUsuario())
                 .orElseThrow(() -> new CompraException("Usuario no encontrado."));
         entidad.setProveedor(proveedor);

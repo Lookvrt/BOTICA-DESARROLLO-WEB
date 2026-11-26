@@ -62,7 +62,7 @@ public class UsuarioService {
     /** Actualiza datos del usuario (no actualiza la clave si viene vacía) */
     public UsuarioEntity actualizar(UsuarioEntity usuario) {
         UsuarioEntity existente = usuarioRepository.findById(usuario.getIdUsuario())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
         existente.setNombres(usuario.getNombres());
         existente.setApellidos(usuario.getApellidos());
@@ -96,7 +96,7 @@ public class UsuarioService {
     /** Actualiza directamente la clave del usuario cifrándola y limpia tokens OTP */
     public void cambiarClave(Integer idUsuario, String nuevaClave) {
         UsuarioEntity usuario = usuarioRepository.findById(idUsuario)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
         usuario.setClave(passwordEncoder.encode(nuevaClave));
         usuario.setOtpCode(null);
         usuario.setOtpExpiracion(null);
@@ -106,7 +106,7 @@ public class UsuarioService {
     /** Desbloquea la cuenta de un usuario bloqueada por exceso de intentos fallidos (PS-02 / HZ-01) */
     public void desbloquear(Integer idUsuario) {
         UsuarioEntity usuario = usuarioRepository.findById(idUsuario)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
         usuario.setIntentosFallidos(0);
         usuario.setBloqueadoHasta(null);
         usuarioRepository.save(usuario);

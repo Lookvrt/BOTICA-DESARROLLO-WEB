@@ -168,9 +168,10 @@
                         </div>
 
                         <div class="col-md-6 col-lg-3">
-                            <label for="idUsuario" class="form-label fw-semibold">Usuario responsable <span class="text-danger">*</span></label>
-                            <select id="idUsuario" th:field="*{idUsuario}" class="form-select" required>
-                                <option value="">Seleccione un usuario</option>
+                            <label for="idUsuario" class="form-label fw-semibold">Usuario responsable</label>
+                            <!-- Solo informativo (disabled = no se envía): el servidor asigna al usuario en sesión -->
+                            <select id="idUsuario" th:field="*{idUsuario}" class="form-select" disabled>
+                                <option value="">—</option>
                                 <option th:each="u : ${usuarios}" th:value="${u.idUsuario}" th:text="${u.nombres + ' ' + u.apellidos}"></option>
                             </select>
                         </div>

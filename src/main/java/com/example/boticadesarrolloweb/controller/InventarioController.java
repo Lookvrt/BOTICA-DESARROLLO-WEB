@@ -145,7 +145,7 @@ public class InventarioController {
         } catch (Exception e) {
             log.error("Error al guardar producto: {}", e.getMessage(), e);
             redirectAttributes.addFlashAttribute("mensajeError",
-                    "Error al procesar la solicitud: " + e.getMessage());
+                    "No se pudo guardar el producto. Verifica los datos e intenta nuevamente.");
         }
 
         return "redirect:/inventario";
@@ -189,7 +189,8 @@ public class InventarioController {
 
         } catch (Exception e) {
             log.error("Error al registrar lote: {}", e.getMessage(), e);
-            redirectAttributes.addFlashAttribute("mensajeError", "Error al registrar el lote: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("mensajeError",
+                    "No se pudo registrar el lote. Verifica los datos e intenta nuevamente.");
         }
 
         return "redirect:/inventario";

@@ -9,7 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+        import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.Optional;
 
 /**
  * Controlador para la recuperación de contraseña de usuarios.
@@ -23,6 +25,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/recuperar-clave")
 @RequiredArgsConstructor
 public class RecuperarClaveController {
+
+    /** Id ficticio para identificadores que no existen: el flujo continúa igual y no revela qué cuentas hay. */
+    private static final int USUARIO_INEXISTENTE = -1;
+    private static final long ESPERA_REENVIO_MS = 60_000;
 
     private final UsuarioService usuarioService;
     private final OtpService otpService;
@@ -43,10 +49,8 @@ public class RecuperarClaveController {
         }
 
         // Manejo de mensajes de error
-        if ("notfound".equalsIgnoreCase(error)) {
-            model.addAttribute("errorMsg", "No existe ninguna cuenta registrada con ese usuario o correo.");
-        } else if ("noemail".equalsIgnoreCase(error)) {
-            model.addAttribute("errorMsg", "Este usuario no tiene un correo electrónico configurado. Contacta al administrador.");
+        if ("vacio".equalsIgnoreCase(error)) {
+            model.addAttribute("errorMsg", "Ingresa tu usuario o correo electrónico.");
         } else if ("codigo_invalido".equalsIgnoreCase(error)) {
             model.addAttribute("errorMsg", "El código ingresado es incorrecto o ya ha expirado.");
         } else if ("no_coinciden".equalsIgnoreCase(error)) {
@@ -61,16 +65,10 @@ public class RecuperarClaveController {
 
         // Manejo de mensajes de éxito
         if (enviado != null) {
-            model.addAttribute("infoMsg", "Se ha enviado un código de verificación a tu correo registrado.");
+            model.addAttribute("infoMsg", "Si la cuenta existe, enviamos un código de verificación al correo registrado.");
         }
         if (reenviado != null) {
-            model.addAttribute("infoMsg", "Se reenvió un nuevo código a tu correo.");
-        }
-
-        // Enmascarar el correo para mostrarlo en el paso 2 (ej: j***r@correo.com)
-        String email = (String) session.getAttribute("recuperar_email");
-        if (email != null) {
-            model.addAttribute("emailEnmascarado", enmascararEmail(email));
+            model.addAttribute("infoMsg", "Si la cuenta existe, se reenvió un código al correo registrado.");
         }
 
         model.addAttribute("paso", paso);
@@ -85,31 +83,29 @@ public class RecuperarClaveController {
                             HttpSession session) {
 
         if (identificador == null || identificador.trim().isEmpty()) {
-            return "redirect:/recuperar-clave?error=notfound";
+            return "redirect:/recuperar-clave?error=vacio";
         }
 
         String idLimpio = identificador.trim();
-        UsuarioEntity usuario = usuarioService.buscarPorUsuario(idLimpio)
-                .or(() -> usuarioService.buscarPorEmail(idLimpio))
-                .orElse(null);
+        Optional<UsuarioEntity> encontrado = usuarioService.buscarPorUsuario(idLimpio)
+                .or(() -> usuarioService.buscarPorEmail(idLimpio));
 
-        if (usuario == null) {
-            log.warn("Intento de recuperación para usuario/email inexistente: {}", idLimpio);
-            return "redirect:/recuperar-clave?error=notfound";
+        // Se responde exactamente igual exista o no la cuenta (o no tenga correo),
+        // para que nadie pueda averiguar qué usuarios o correos están registrados.
+        int idUsuario = USUARIO_INEXISTENTE;
+        if (encontrado.isPresent()) {
+            UsuarioEntity usuario = encontrado.get();
+            if (usuario.getEmail() == null || usuario.getEmail().isBlank()) {
+                log.warn("Recuperación solicitada por un usuario sin email registrado: {}", usuario.getUsuario());
+            } else {
+                otpService.generarYEnviarOtpRecuperacion(usuario);
+                idUsuario = usuario.getIdUsuario();
+            }
         }
 
-        if (usuario.getEmail() == null || usuario.getEmail().isBlank()) {
-            log.warn("Usuario sin email registrado para recuperación: {}", usuario.getUsuario());
-            return "redirect:/recuperar-clave?error=noemail";
-        }
-
-        // Generar OTP y enviar correo
-        otpService.generarYEnviarOtpRecuperacion(usuario);
-
-        // Guardar estado en sesión
-        session.setAttribute("recuperar_usuario_id", usuario.getIdUsuario());
-        session.setAttribute("recuperar_email", usuario.getEmail());
+        session.setAttribute("recuperar_usuario_id", idUsuario);
         session.setAttribute("recuperar_paso", 2);
+        session.setAttribute("recuperar_ultimo_envio", System.currentTimeMillis());
 
         return "redirect:/recuperar-clave?enviado=true";
     }
@@ -128,8 +124,8 @@ public class RecuperarClaveController {
 
         UsuarioEntity usuario = usuarioService.buscarPorId(usuarioId).orElse(null);
         if (usuario == null) {
-            limpiarSesion(session);
-            return "redirect:/recuperar-clave?error=sesion_expirada";
+            // Cuenta inexistente: misma respuesta que un código incorrecto
+            return "redirect:/recuperar-clave?error=codigo_invalido";
         }
 
         boolean valido = otpService.validarOtp(usuario, codigo != null ? codigo.trim() : "");
@@ -152,15 +148,16 @@ public class RecuperarClaveController {
             return "redirect:/recuperar-clave?error=sesion_expirada";
         }
 
-        UsuarioEntity usuario = usuarioService.buscarPorId(usuarioId).orElse(null);
-        if (usuario == null) {
-            limpiarSesion(session);
-            return "redirect:/recuperar-clave?error=sesion_expirada";
-        }
-
-        if (!otpService.generarYEnviarOtpRecuperacion(usuario)) {
+        // Tiempo de espera por sesión: es igual para cuentas existentes e inexistentes
+        Long ultimoEnvio = (Long) session.getAttribute("recuperar_ultimo_envio");
+        long ahora = System.currentTimeMillis();
+        if (ultimoEnvio != null && ahora - ultimoEnvio < ESPERA_REENVIO_MS) {
             return "redirect:/recuperar-clave?error=espera";
         }
+        session.setAttribute("recuperar_ultimo_envio", ahora);
+
+        // Si la cuenta no existe no se envía nada, pero la respuesta es la misma
+        usuarioService.buscarPorId(usuarioId).ifPresent(otpService::generarYEnviarOtpRecuperacion);
         return "redirect:/recuperar-clave?reenviado=true";
     }
 
@@ -208,20 +205,8 @@ public class RecuperarClaveController {
     private void limpiarSesion(HttpSession session) {
         session.removeAttribute("recuperar_usuario_id");
         session.removeAttribute("recuperar_email");
+        session.removeAttribute("recuperar_ultimo_envio");
         session.removeAttribute("recuperar_paso");
         session.removeAttribute("recuperar_autorizado");
-    }
-
-    private String enmascararEmail(String email) {
-        if (email == null || !email.contains("@")) {
-            return email;
-        }
-        int atIndex = email.indexOf("@");
-        String name = email.substring(0, atIndex);
-        String domain = email.substring(atIndex);
-        if (name.length() <= 2) {
-            return name.charAt(0) + "***" + domain;
-        }
-        return name.charAt(0) + "***" + name.charAt(name.length() - 1) + domain;
     }
 }

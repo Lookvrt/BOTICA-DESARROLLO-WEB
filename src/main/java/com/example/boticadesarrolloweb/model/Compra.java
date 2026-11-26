@@ -20,7 +20,7 @@ public class Compra {
     @NotNull(message = "Debe seleccionar un proveedor")
     private Integer idProveedor;
 
-    @NotNull(message = "El usuario responsable es obligatorio")
+    /** Responsable de la compra. Lo asigna el servidor (usuario en sesión); el valor del formulario se ignora. */
     private Integer idUsuario;
 
     private LocalDateTime fechaCompra;
