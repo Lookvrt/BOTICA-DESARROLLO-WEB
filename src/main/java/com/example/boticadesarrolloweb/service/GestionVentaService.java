@@ -8,10 +8,10 @@ import com.example.boticadesarrolloweb.repository.*;
 import com.example.boticadesarrolloweb.service.PuntoVentaService.VentaException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
@@ -31,7 +31,6 @@ public class GestionVentaService {
     public static final String TIPO_FACTURA = "FACTURA";
     public static final String SERIE_FACTURA = "F001-";
     private static final int MAX_INTENTOS_FACTURA = 5;
-    private final PlatformTransactionManager transactionManager;
 
     private final VentaRepository ventaRepository;
     private final DetalleVentaRepository detalleVentaRepository;
@@ -40,6 +39,8 @@ public class GestionVentaService {
     private final ProductoRepository productoRepository;
     private final LoteRepository loteRepository;
     private final PuntoVentaService puntoVentaService;
+    private final PlatformTransactionManager transactionManager;
+    private final BloqueoService bloqueoService;
 
     @Transactional(readOnly = true)
     public List<VentaEntity> listar(String q) {
@@ -123,7 +124,12 @@ public class GestionVentaService {
         return idVenta != null && detalleVentaRepository.findByVentaConLote(idVenta).isEmpty();
     }
 
-    /** Registra una factura nueva o guarda los cambios de una venta existente. */
+    /**
+     * Registra una factura nueva o guarda los cambios de una venta existente.
+     * Si dos facturas simultáneas calculan el mismo correlativo, la restricción unique de
+     * numero_comprobante hace fallar a la segunda: se revierte completa (stock incluido) y se
+     * reintenta en una transacción nueva, que ya ve el número que confirmó la primera.
+     */
     public VentaEntity guardar(Venta form, Integer idUsuario) {
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         boolean esNueva = form.getIdVenta() == null;
@@ -174,15 +180,21 @@ public class GestionVentaService {
         }
 
         VentaEntity venta = buscar(form.getIdVenta());
+        // Se bloquea la venta (y abajo sus lotes) para que una edición/anulación simultánea
+        // no devuelva el stock dos veces ni pise el stock de una venta en curso.
+        bloqueoService.bloquear(venta);
         if (venta.getEstado() == EstadoVenta.ANULADA) {
             throw new VentaException("No se puede editar una venta anulada.");
         }
         asignarClienteYPago(venta, form);
 
+        List<DetalleVentaEntity> detallesActuales = detalleVentaRepository.findByVentaConLote(venta.getIdVenta());
+        bloqueoService.bloquearLotes(detallesActuales.stream().map(DetalleVentaEntity::getLote).toList());
+
         // Devolver al inventario lo vendido y volver a descontar con las nuevas cantidades.
         // Los productos que ya estaban en la venta conservan su precio original.
         Map<Integer, BigDecimal> preciosOriginales = new HashMap<>();
-        for (DetalleVentaEntity d : detalleVentaRepository.findByVentaConLote(venta.getIdVenta())) {
+        for (DetalleVentaEntity d : detallesActuales) {
             preciosOriginales.putIfAbsent(d.getProducto().getIdProducto(), d.getPrecioUnitario());
             d.getLote().setStockActual(d.getLote().getStockActual() + d.getCantidad());
             detalleVentaRepository.delete(d);
@@ -198,10 +210,13 @@ public class GestionVentaService {
     @Transactional
     public void anular(Integer idVenta) {
         VentaEntity venta = buscar(idVenta);
+        bloqueoService.bloquear(venta);
         if (venta.getEstado() == EstadoVenta.ANULADA) {
             throw new VentaException("La venta ya está anulada.");
         }
-        for (DetalleVentaEntity d : detalleVentaRepository.findByVentaConLote(idVenta)) {
+        List<DetalleVentaEntity> detalles = detalleVentaRepository.findByVentaConLote(idVenta);
+        bloqueoService.bloquearLotes(detalles.stream().map(DetalleVentaEntity::getLote).toList());
+        for (DetalleVentaEntity d : detalles) {
             d.getLote().setStockActual(d.getLote().getStockActual() + d.getCantidad());
         }
         venta.setEstado(EstadoVenta.ANULADA);

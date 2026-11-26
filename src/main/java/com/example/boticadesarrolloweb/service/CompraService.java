@@ -28,6 +28,7 @@ public class CompraService {
     private final ProductoRepository productoRepository;
     private final LoteRepository loteRepository;
     private final AlertaService alertaService;
+    private final BloqueoService bloqueoService;
 
     public CompraService(
             CompraRepository compraRepository,
@@ -37,7 +38,8 @@ public class CompraService {
             UsuarioRepository usuarioRepository,
             ProductoRepository productoRepository,
             LoteRepository loteRepository,
-            AlertaService alertaService) {
+            AlertaService alertaService,
+            BloqueoService bloqueoService) {
         this.compraRepository = compraRepository;
         this.detalleCompraRepository = detalleCompraRepository;
         this.detalleVentaRepository = detalleVentaRepository;
@@ -46,6 +48,7 @@ public class CompraService {
         this.productoRepository = productoRepository;
         this.loteRepository = loteRepository;
         this.alertaService = alertaService;
+        this.bloqueoService = bloqueoService;
     }
 
     /** Error de validación de negocio cuyo mensaje se muestra al usuario. */
@@ -268,6 +271,7 @@ public class CompraService {
      */
     private CompraEntity actualizarCompra(Compra compra) {
         CompraEntity entidad = buscarPorId(compra.getIdCompra());
+        bloqueoService.bloquear(entidad);
         if (entidad.getEstado() == EstadoCompra.ANULADA) {
             throw new CompraException("No se puede editar una compra anulada.");
         }
@@ -276,6 +280,8 @@ public class CompraService {
         Map<Integer, DetalleCompraEntity> existentes = new HashMap<>();
         detalleCompraRepository.findByCompraConLote(entidad.getIdCompra())
                 .forEach(d -> existentes.put(d.getIdDetalleCompra(), d));
+        // Bloquear y recargar los lotes antes de calcular lo vendido y ajustar su stock
+        bloqueoService.bloquearLotes(existentes.values().stream().map(DetalleCompraEntity::getLote).toList());
 
         List<DetalleCompra> enviados = compra.getDetalles() == null ? List.of()
                 : compra.getDetalles().stream().filter(d -> d != null && d.getIdProducto() != null).toList();
@@ -401,12 +407,14 @@ public class CompraService {
     @Transactional
     public void anularCompra(Integer id) {
         CompraEntity compra = compraRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("La compra no existe."));
+        bloqueoService.bloquear(compra);
 
         if (compra.getEstado() == EstadoCompra.ANULADA) {
             throw new IllegalStateException("La compra ya está anulada.");
         }
 
         List<DetalleCompraEntity> detalles = detalleCompraRepository.findByCompraConLote(id);
+        bloqueoService.bloquearLotes(detalles.stream().map(DetalleCompraEntity::getLote).toList());
         for (DetalleCompraEntity d : detalles) {
             LoteEntity lote = d.getLote();
             if (lote.getStockActual() < d.getCantidad()) {
