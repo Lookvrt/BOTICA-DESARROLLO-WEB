@@ -34,10 +34,25 @@ public class ComprasController {
         this.proveedorService = proveedorService;
     }
 
-    private void cargarListas(Model model, String query, String orden) {
+    private void cargarListas(Model model, String query, String orden, HttpSession session) {
         model.addAttribute("compras", compraService.listarCompras(query, orden));
         model.addAttribute("proveedores", proveedorService.listarProveedores());
-        model.addAttribute("usuarios", compraService.listarUsuarios());
+        model.addAttribute("responsable", etiquetaResponsable((Compra) model.getAttribute("compra"), session));
+    }
+
+    /** "Tú" si la compra es (o será) del usuario en sesión; si no, el nombre de quien la registró. */
+    private String etiquetaResponsable(Compra compra, HttpSession session) {
+        Integer idResponsable = null;
+        if (compra != null) {
+            idResponsable = compra.getIdCompra() != null
+                    ? compraService.idResponsable(compra.getIdCompra())
+                    : compra.getIdUsuario();
+        }
+        if (idResponsable == null || idResponsable.equals(session.getAttribute("usuario_autenticado_id"))) {
+            return "Tú";
+        }
+        String nombre = compraService.nombreUsuario(idResponsable);
+        return nombre.isBlank() ? "—" : nombre;
     }
 
     /**
@@ -68,7 +83,7 @@ public class ComprasController {
             model.addAttribute("compra", compra);
         }
 
-        cargarListas(model, query, orden);
+        cargarListas(model, query, orden, session);
         model.addAttribute("query", query);
         model.addAttribute("orden", orden);
 
@@ -92,12 +107,12 @@ public class ComprasController {
             try {
                 compra.setIdUsuario(resolverUsuario(session, authentication));
             } catch (CompraException e) {
-                return volverAlFormulario(compra, model, e.getMessage());
+                return volverAlFormulario(compra, model, e.getMessage(), session);
             }
         }
 
         if (resultado.hasErrors()) {
-            return volverAlFormulario(compra, model, "Revisa los datos ingresados en el formulario.");
+            return volverAlFormulario(compra, model, "Revisa los datos ingresados en el formulario.", session);
         }
 
         try {
@@ -107,7 +122,7 @@ public class ComprasController {
                     + compra.getDetalles().size() + " producto(s) ingresaron al inventario."
                     : "Compra actualizada correctamente.");
         } catch (CompraException e) {
-            return volverAlFormulario(compra, model, e.getMessage());
+            return volverAlFormulario(compra, model, e.getMessage(), session);
         } catch (RuntimeException e) {
             log.error("Error al guardar compra", e);
             redirectAttributes.addFlashAttribute(
@@ -128,9 +143,9 @@ public class ComprasController {
     }
 
     /** Vuelve a mostrar el modal con los datos ingresados (sin perder los productos agregados). */
-    private String volverAlFormulario(Compra compra, Model model, String error) {
+    private String volverAlFormulario(Compra compra, Model model, String error, HttpSession session) {
         compraService.completarDatosVista(compra);
-        cargarListas(model, null, "asc");
+        cargarListas(model, null, "asc", session);
         model.addAttribute("modalAbrir", compra.getIdCompra() == null ? "nuevo" : "editar");
         model.addAttribute("compraSinProductos", compraService.esCompraSinProductos(compra.getIdCompra()));
         model.addAttribute("error", error);
@@ -141,6 +156,7 @@ public class ComprasController {
     public String editar(
             @PathVariable Integer id,
             Model model,
+            HttpSession session,
             RedirectAttributes redirectAttributes) {
 
         try {
@@ -149,7 +165,7 @@ public class ComprasController {
             model.addAttribute("compra", compra);
             model.addAttribute("modalAbrir", "editar");
             model.addAttribute("compraSinProductos", compra.getDetalles().isEmpty());
-            cargarListas(model, null, "asc");
+            cargarListas(model, null, "asc", session);
 
             return "compras";
         } catch (CompraException e) {

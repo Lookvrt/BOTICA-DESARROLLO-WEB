@@ -83,6 +83,26 @@ public class CompraService {
                 .orElseThrow(() -> new CompraException("No se pudo identificar al usuario de la sesión."));
     }
 
+    /** Id del usuario que registró la compra (null si no existe), para mostrar el responsable en el formulario. */
+    @Transactional(readOnly = true)
+    public Integer idResponsable(Integer idCompra) {
+        return compraRepository.findById(idCompra)
+                .map(CompraEntity::getUsuario)
+                .map(UsuarioEntity::getIdUsuario)
+                .orElse(null);
+    }
+
+    /** Nombre completo de un usuario (cadena vacía si no existe). */
+    @Transactional(readOnly = true)
+    public String nombreUsuario(Integer idUsuario) {
+        if (idUsuario == null) {
+            return "";
+        }
+        return usuarioRepository.findById(idUsuario)
+                .map(u -> (u.getNombres() + " " + u.getApellidos()).trim())
+                .orElse("");
+    }
+
     @Transactional(readOnly = true)
     public CompraEntity buscarPorId(Integer id) {
         return compraRepository.findById(id)
