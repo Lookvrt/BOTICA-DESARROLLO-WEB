@@ -1,6 +1,7 @@
 package com.example.boticadesarrolloweb.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,6 +20,11 @@ public class SecurityConfig {
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
     private final CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
+
+    // Definir REMEMBER_ME_KEY (o app.security.remember-me-key) para conservar las sesiones "recordarme"
+    // entre reinicios. Si falta, se genera una clave aleatoria en cada arranque.
+    @Value("${app.security.remember-me-key:#{T(java.util.UUID).randomUUID().toString()}}")
+    private String rememberMeKey;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -59,7 +65,7 @@ public class SecurityConfig {
                         .permitAll()
                 )
                 .rememberMe(remember -> remember
-                        .key("botica-secreta-remember-me-key-2026")
+                        .key(rememberMeKey)
                         .tokenValiditySeconds(86400 * 7)
                         .rememberMeParameter("remember-me")
                         .userDetailsService(userDetailsService)
