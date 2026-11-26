@@ -44,7 +44,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             HttpSession session = request.getSession(true);
             session.setAttribute("otp_verificado", true);
             session.setAttribute("usuario_autenticado_id", usuario.getIdUsuario());
-            session.setAttribute("usuario_autenticado_nombre", usuario.getNombres() + " " + usuario.getApellidos());
+            session.setAttribute("usuario_autenticado_nombre", usuario.getNombres());
             session.setAttribute("usuario_autenticado_rol", usuario.getRol().name());
 
             log.info("Inicio de sesión exitoso con Google para: {} (Rol: {})", email, usuario.getRol());
