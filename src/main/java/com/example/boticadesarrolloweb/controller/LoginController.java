@@ -138,7 +138,7 @@ public class LoginController {
             } else if ("ROLE_ALMACENERO".equals(role)) {
                 return "redirect:/compras";
             } else if ("ROLE_VENDEDOR".equals(role)) {
-                return "redirect:/venta";
+                return "redirect:/punto-de-venta";
             }
         }
         return "redirect:/login";
@@ -177,7 +177,7 @@ public class LoginController {
             return switch (usuario.getRol()) {
                 case ADMINISTRADOR -> "redirect:/dashboard";
                 case ALMACENERO -> "redirect:/compras";
-                case VENDEDOR -> "redirect:/venta";
+                case VENDEDOR -> "redirect:/punto-de-venta";
             };
         }
 
@@ -279,7 +279,7 @@ public class LoginController {
             return switch (usuario.getRol()) {
                 case ADMINISTRADOR -> "redirect:/dashboard";
                 case ALMACENERO -> "redirect:/compras";
-                case VENDEDOR -> "redirect:/venta";
+                case VENDEDOR -> "redirect:/punto-de-venta";
             };
         }
 
