@@ -52,7 +52,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             String targetUrl = switch (usuario.getRol()) {
                 case ADMINISTRADOR -> "/dashboard";
                 case ALMACENERO -> "/alertas";
-                case VENDEDOR -> "/venta";
+                case VENDEDOR -> "/punto-de-venta";
             };
 
             getRedirectStrategy().sendRedirect(request, response, targetUrl);

@@ -340,7 +340,7 @@ document.addEventListener("DOMContentLoaded", function () {
         inputMontoRecibido.addEventListener("input", actualizarResumenPago);
     }
 
-    // --- 4. Registro de Venta (POST /venta/api/registrar) ---
+    // --- 4. Registro de Venta (POST /punto-de-venta/api/registrar) ---
     async function registrarVenta() {
         if (carrito.length === 0) return;
 
@@ -392,7 +392,7 @@ document.addEventListener("DOMContentLoaded", function () {
         btnRegistrarVenta.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Procesando...`;
 
         try {
-            const response = await fetch("/venta/api/registrar", {
+            const response = await fetch("/punto-de-venta/api/registrar", {
                 method: "POST",
                 headers: headers,
                 body: JSON.stringify(payload)

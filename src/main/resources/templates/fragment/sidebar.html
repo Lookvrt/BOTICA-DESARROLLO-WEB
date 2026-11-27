@@ -28,7 +28,7 @@
 
             <!-- Punto de Venta (Administrador y Vendedor) -->
             <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'VENDEDOR')">
-                <a th:href="@{/venta}"
+                <a th:href="@{/punto-de-venta}"
                    class="nav-link"
                    th:classappend="${activeTab == 'venta'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
                     <i class="bi bi-cart-check me-2"></i> Punto de Venta
@@ -172,7 +172,7 @@
             <span>Inicio</span>
         </a>
 
-        <a th:href="@{/venta}" sec:authorize="hasAnyRole('ADMINISTRADOR', 'VENDEDOR')"
+        <a th:href="@{/punto-de-venta}" sec:authorize="hasAnyRole('ADMINISTRADOR', 'VENDEDOR')"
            class="mobile-nav-item" th:classappend="${activeTab == 'venta'} ? 'active'">
             <i class="bi bi-cart-check"></i>
             <span>Caja POS</span>
@@ -243,7 +243,7 @@
                     </a>
                 </div>
                 <div class="col-4" sec:authorize="hasAnyRole('ADMINISTRADOR', 'VENDEDOR')">
-                    <a th:href="@{/venta}" class="sheet-grid-link" th:classappend="${activeTab == 'venta'} ? 'active'">
+                    <a th:href="@{/punto-de-venta}" class="sheet-grid-link" th:classappend="${activeTab == 'venta'} ? 'active'">
                         <i class="bi bi-cart-check fs-4 text-info"></i>
                         <span>Punto Venta</span>
                     </a>

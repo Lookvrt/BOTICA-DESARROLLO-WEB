@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * Objetos JSON que intercambia la pantalla de Punto de Venta (static/js/venta.js).
+ * Objetos JSON que intercambia la pantalla de Punto de Venta (static/js/punto-de-venta.js).
  */
 public final class PuntoVentaDto {
 

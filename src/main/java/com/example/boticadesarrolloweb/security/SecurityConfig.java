@@ -42,7 +42,7 @@ public class SecurityConfig {
                         .requestMatchers("/reporte", "/reporte/**", "/api/reportes/**").hasRole("ADMINISTRADOR")
 
                         // 3. Módulos compartidos
-                        .requestMatchers("/venta", "/venta/**").hasAnyRole("ADMINISTRADOR", "VENDEDOR")
+                        .requestMatchers("/punto-de-venta", "/punto-de-venta/**").hasAnyRole("ADMINISTRADOR", "VENDEDOR")
                         .requestMatchers("/ventas", "/ventas/**").hasAnyRole("ADMINISTRADOR", "VENDEDOR")
                         .requestMatchers("/clientes", "/clientes/**").hasAnyRole("ADMINISTRADOR", "VENDEDOR")
                         .requestMatchers("/inventario", "/inventario/**").hasAnyRole("ADMINISTRADOR", "ALMACENERO")

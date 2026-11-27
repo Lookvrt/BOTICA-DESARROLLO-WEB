@@ -24,13 +24,13 @@ import java.util.Map;
 @Slf4j
 @Controller
 @RequiredArgsConstructor
-public class VentaController {
+public class PuntoDeVentaController {
 
     private final PuntoVentaService puntoVentaService;
     private final UsuarioRepository usuarioRepository;
     private final ProductoService productoService;
 
-    @GetMapping("/venta")
+    @GetMapping("/punto-de-venta")
     public String mostrarPuntoVenta(Model model) {
         List<InventarioItemDto> productosDisponibles = productoService.listarInventario(null, null, null)
                 .stream()
@@ -39,16 +39,16 @@ public class VentaController {
 
         model.addAttribute("productos", productosDisponibles);
         model.addAttribute("metodosPago", MetodoPago.values());
-        return "venta";
+        return "punto-de-venta";
     }
 
-    @GetMapping("/venta/api/productos")
+    @GetMapping("/punto-de-venta/api/productos")
     @ResponseBody
     public List<ProductoVenta> buscarProductos(@RequestParam(name = "q", required = false) String q) {
         return puntoVentaService.buscarProductos(q);
     }
 
-    @PostMapping("/venta/api/registrar")
+    @PostMapping("/punto-de-venta/api/registrar")
     @ResponseBody
     public ResponseEntity<?> registrar(@RequestBody VentaRequest request,
                                        HttpSession session,

@@ -69,7 +69,7 @@ src/main/
 2. **Configurar credenciales locales:**
    Copia la plantilla y coloca las contraseñas del equipo:
    ```bash
-   cp src/main/resources/application-local.properties.example.example src/main/resources/application-local.properties.example
+   cp src/main/resources/application-local.properties.example src/main/resources/application-local.properties
    ```
 
 3. **Ejecutar el proyecto:**

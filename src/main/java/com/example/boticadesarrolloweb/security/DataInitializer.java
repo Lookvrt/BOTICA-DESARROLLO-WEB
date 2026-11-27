@@ -26,7 +26,7 @@ import java.util.List;
  * 2. Categorías farmacéuticas básicas.
  * 3. Productos y lotes iniciales para pruebas del inventario.
  *
- * Solo se ejecuta con app.seed.enabled=true (definirlo en application-local.properties.example);
+ * Solo se ejecuta con app.seed.enabled=true (definirlo en application-local.properties);
  * en producción no siembra nada ni recrea el usuario admin.
  */
 @ConditionalOnProperty(name = "app.seed.enabled", havingValue = "true")

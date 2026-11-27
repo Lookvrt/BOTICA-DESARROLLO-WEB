@@ -23,7 +23,7 @@ import java.util.List;
 
 /**
  * Módulo Ventas (/ventas): listado de todas las ventas y facturas a clientes.
- * El Punto de Venta (/venta) sigue siendo la caja rápida con boleta.
+ * El Punto de Venta (/punto-de-venta) sigue siendo la caja rápida con boleta.
  */
 @Slf4j
 @Controller
