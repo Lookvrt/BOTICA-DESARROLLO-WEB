@@ -1,131 +1,289 @@
-<div th:fragment="sidebar(activeTab)"
-     xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-     class="d-flex flex-column flex-shrink-0 p-3 text-white bg-primary position-fixed top-0 start-0 vh-100 sidebar-width"
-     style="width: 260px; z-index: 1000;">
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="es">
+<body>
 
-    <a href="/" class="d-flex align-items-center mb-3 text-white text-decoration-none justify-content-center w-100 flex-shrink-0">
-        <div class="bg-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
-            <img th:src="@{/images/icon.png}" alt="Logo" class="img-fluid" style="max-height: 100%; object-fit: contain;">
-        </div>
-    </a>
+<th:block th:fragment="sidebar(activeTab)">
 
-    <hr class="my-3 flex-shrink-0">
+    <!-- 1. SIDEBAR ESCRITORIO (>= 992px) -->
+    <aside class="sidebar-desktop d-none d-lg-flex flex-column flex-shrink-0 bg-primary text-white p-3 shadow">
 
-    <ul class="nav nav-pills flex-column mb-auto overflow-y-auto">
-        <!-- Dashboard (Exclusivo para ADMINISTRADOR según matriz) -->
-        <li class="nav-item mb-1" sec:authorize="hasRole('ADMINISTRADOR')">
-            <a th:href="@{/dashboard}"
-               class="nav-link"
-               th:classappend="${activeTab == 'dashboard'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
-                <i class="bi bi-speedometer2 me-2"></i> Dashboard
-            </a>
-        </li>
+        <a th:href="@{/}" class="d-flex align-items-center mb-3 text-white text-decoration-none justify-content-center w-100 flex-shrink-0">
+            <div class="bg-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                <img th:src="@{/images/icon.png}" alt="Logo" class="img-fluid" style="max-height: 100%; object-fit: contain;">
+            </div>
+        </a>
 
-        <!-- Punto de Venta (Administrador y Vendedor / Farmacéutico) -->
-        <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'VENDEDOR')">
-            <a th:href="@{/venta}"
-               class="nav-link"
-               th:classappend="${activeTab == 'venta'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
-                <i class="bi bi-cart-check me-2"></i> Punto de Venta
-            </a>
-        </li>
+        <hr class="my-3 flex-shrink-0">
 
-        <!-- Ventas: listado y facturas (Administrador y Vendedor) -->
-        <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'VENDEDOR')">
-            <a th:href="@{/ventas}"
-               class="nav-link"
-               th:classappend="${activeTab == 'ventas'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
-                <i class="bi bi-receipt me-2"></i> Ventas
-            </a>
-        </li>
+        <ul class="nav nav-pills flex-column mb-auto overflow-y-auto">
+            <!-- Dashboard (Exclusivo para ADMINISTRADOR) -->
+            <li class="nav-item mb-1" sec:authorize="hasRole('ADMINISTRADOR')">
+                <a th:href="@{/dashboard}"
+                   class="nav-link"
+                   th:classappend="${activeTab == 'dashboard'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
+                    <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                </a>
+            </li>
 
-        <!-- Clientes con RUC (Administrador y Vendedor) -->
-        <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'VENDEDOR')">
-            <a th:href="@{/clientes}"
-               class="nav-link"
-               th:classappend="${activeTab == 'clientes'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
-                <i class="bi bi-buildings me-2"></i> Clientes
-            </a>
-        </li>
+            <!-- Punto de Venta (Administrador y Vendedor) -->
+            <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'VENDEDOR')">
+                <a th:href="@{/venta}"
+                   class="nav-link"
+                   th:classappend="${activeTab == 'venta'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
+                    <i class="bi bi-cart-check me-2"></i> Punto de Venta
+                </a>
+            </li>
 
-        <!-- Compras (Administrador y Almacenero) -->
-        <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'ALMACENERO')">
-            <a th:href="@{/compras}"
-               class="nav-link"
-               th:classappend="${activeTab == 'compras'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
-                <i class="bi bi-bag me-2"></i> Compras
-            </a>
-        </li>
+            <!-- Ventas (Administrador y Vendedor) -->
+            <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'VENDEDOR')">
+                <a th:href="@{/ventas}"
+                   class="nav-link"
+                   th:classappend="${activeTab == 'ventas'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
+                    <i class="bi bi-receipt me-2"></i> Ventas
+                </a>
+            </li>
 
-        <!-- Inventario (Administrador y Almacenero) -->
-        <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'ALMACENERO')">
-            <a th:href="@{/inventario}"
-               class="nav-link"
-               th:classappend="${activeTab == 'inventario'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
-                <i class="bi bi-box-seam me-2"></i> Inventario
-            </a>
-        </li>
+            <!-- Clientes (Administrador y Vendedor) -->
+            <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'VENDEDOR')">
+                <a th:href="@{/clientes}"
+                   class="nav-link"
+                   th:classappend="${activeTab == 'clientes'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
+                    <i class="bi bi-buildings me-2"></i> Clientes
+                </a>
+            </li>
 
-        <!-- Proveedores (Administrador y Almacenero) -->
-        <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'ALMACENERO')">
-            <a th:href="@{/proveedores}"
-               class="nav-link"
-               th:classappend="${activeTab == 'proveedores'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
-                <i class="bi bi-truck me-2"></i> Proveedores
-            </a>
-        </li>
+            <!-- Compras (Administrador y Almacenero) -->
+            <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'ALMACENERO')">
+                <a th:href="@{/compras}"
+                   class="nav-link"
+                   th:classappend="${activeTab == 'compras'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
+                    <i class="bi bi-bag me-2"></i> Compras
+                </a>
+            </li>
 
-        <!-- Usuarios (Solo Administrador) -->
-        <li class="nav-item mb-1" sec:authorize="hasRole('ADMINISTRADOR')">
-            <a th:href="@{/usuarios}"
-               class="nav-link"
-               th:classappend="${activeTab == 'usuarios'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
-                <i class="bi bi-people me-2"></i> Usuarios
-            </a>
-        </li>
+            <!-- Inventario (Administrador y Almacenero) -->
+            <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'ALMACENERO')">
+                <a th:href="@{/inventario}"
+                   class="nav-link"
+                   th:classappend="${activeTab == 'inventario'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
+                    <i class="bi bi-box-seam me-2"></i> Inventario
+                </a>
+            </li>
 
-        <!-- Reporte (Solo Administrador) -->
-        <li class="nav-item mb-1" sec:authorize="hasRole('ADMINISTRADOR')">
-            <a th:href="@{/reporte}"
-               class="nav-link"
-               th:classappend="${activeTab == 'reporte'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
-                <i class="bi bi-file-earmark-bar-graph me-2"></i> Reporte
-            </a>
-        </li>
+            <!-- Proveedores (Administrador y Almacenero) -->
+            <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'ALMACENERO')">
+                <a th:href="@{/proveedores}"
+                   class="nav-link"
+                   th:classappend="${activeTab == 'proveedores'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
+                    <i class="bi bi-truck me-2"></i> Proveedores
+                </a>
+            </li>
 
-        <!-- Alertas (Administrador y Almacenero) -->
-        <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'ALMACENERO')">
-            <a th:href="@{/alertas}"
-               class="nav-link"
-               th:classappend="${activeTab == 'alertas'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
-                <i class="bi bi-bell me-2"></i> Alertas
-            </a>
-        </li>
-    </ul>
+            <!-- Usuarios (Solo Administrador) -->
+            <li class="nav-item mb-1" sec:authorize="hasRole('ADMINISTRADOR')">
+                <a th:href="@{/usuarios}"
+                   class="nav-link"
+                   th:classappend="${activeTab == 'usuarios'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
+                    <i class="bi bi-people me-2"></i> Usuarios
+                </a>
+            </li>
 
-    <hr class="my-3 flex-shrink-0">
+            <!-- Reporte (Solo Administrador) -->
+            <li class="nav-item mb-1" sec:authorize="hasRole('ADMINISTRADOR')">
+                <a th:href="@{/reporte}"
+                   class="nav-link"
+                   th:classappend="${activeTab == 'reporte'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
+                    <i class="bi bi-file-earmark-bar-graph me-2"></i> Reporte
+                </a>
+            </li>
 
-    <!-- Usuario y Rol Autenticado -->
-    <div class="d-flex align-items-center justify-content-between px-2 pt-2 flex-shrink-0">
-        <div class="d-flex align-items-center gap-2 overflow-hidden me-2">
-            <i class="bi bi-person-circle fs-4 flex-shrink-0"></i>
-            <div class="d-flex flex-column overflow-hidden">
-                <span class="fw-bold fs-6 text-truncate mb-0"
-                      th:text="${session.usuario_autenticado_nombre != null ? session.usuario_autenticado_nombre : 'Usuario'}">Usuario</span>
-                <span class="badge bg-light text-primary text-truncate small"
-                      style="font-size: 0.7rem;"
-                      th:with="rolActual=${session.usuario_autenticado_rol != null ? session.usuario_autenticado_rol : #strings.replace(#authentication.getAuthorities()[0].getAuthority(), 'ROLE_', '')}"
-                      th:text="${rolActual == 'ADMINISTRADOR' ? 'ADMIN' : rolActual}">
+            <!-- Alertas (Administrador y Almacenero) -->
+            <li class="nav-item mb-1" sec:authorize="hasAnyRole('ADMINISTRADOR', 'ALMACENERO')">
+                <a th:href="@{/alertas}"
+                   class="nav-link"
+                   th:classappend="${activeTab == 'alertas'} ? 'active bg-light text-primary fw-bold' : 'text-white'">
+                    <i class="bi bi-bell me-2"></i> Alertas
+                </a>
+            </li>
+        </ul>
+
+        <hr class="my-3 flex-shrink-0">
+
+        <!-- Usuario y Rol Autenticado -->
+        <div class="d-flex align-items-center justify-content-between px-2 pt-2 flex-shrink-0">
+            <div class="d-flex align-items-center gap-2 overflow-hidden me-2">
+                <!-- Avatar circular con la inicial del usuario -->
+                <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold flex-shrink-0 shadow-sm"
+                     style="width: 38px; height: 38px; font-size: 1rem;"
+                     th:text="${session.usuario_autenticado_nombre != null and !#strings.isEmpty(session.usuario_autenticado_nombre) ? #strings.toUpperCase(#strings.substring(session.usuario_autenticado_nombre, 0, 1)) : 'U'}">U</div>
+
+                <div class="d-flex flex-column overflow-hidden">
+                    <span class="fw-bold fs-6 text-truncate mb-0"
+                          th:text="${session.usuario_autenticado_nombre != null ? session.usuario_autenticado_nombre : 'Usuario'}">Usuario</span>
+                    <span class="badge bg-light text-primary text-truncate small"
+                          style="font-size: 0.7rem;"
+                          th:with="rolActual=${session.usuario_autenticado_rol != null ? session.usuario_autenticado_rol : #strings.replace(#authentication.getAuthorities()[0].getAuthority(), 'ROLE_', '')}"
+                          th:text="${rolActual == 'ADMINISTRADOR' ? 'ADMIN' : rolActual}">
                         ROL
-                </span>
+                    </span>
+                </div>
+            </div>
+            <form th:action="@{/logout}" method="post" class="m-0 p-0 flex-shrink-0">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit" class="btn btn-outline-light btn-sm d-flex align-items-center gap-1" title="Cerrar sesión">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Salir</span>
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- 2. BARRA INFERIOR MÓVIL (< 992px) -->
+    <nav class="mobile-bottom-nav d-flex d-lg-none fixed-bottom px-2" aria-label="Navegación móvil">
+
+        <a th:href="@{/dashboard}" sec:authorize="hasRole('ADMINISTRADOR')"
+           class="mobile-nav-item" th:classappend="${activeTab == 'dashboard'} ? 'active'">
+            <i class="bi bi-speedometer2"></i>
+            <span>Inicio</span>
+        </a>
+
+        <a th:href="@{/venta}" sec:authorize="hasAnyRole('ADMINISTRADOR', 'VENDEDOR')"
+           class="mobile-nav-item" th:classappend="${activeTab == 'venta'} ? 'active'">
+            <i class="bi bi-cart-check"></i>
+            <span>Caja POS</span>
+        </a>
+
+        <a th:href="@{/ventas}" sec:authorize="hasRole('VENDEDOR')"
+           class="mobile-nav-item" th:classappend="${activeTab == 'ventas'} ? 'active'">
+            <i class="bi bi-receipt"></i>
+            <span>Ventas</span>
+        </a>
+
+        <a th:href="@{/clientes}" sec:authorize="hasRole('VENDEDOR')"
+           class="mobile-nav-item" th:classappend="${activeTab == 'clientes'} ? 'active'">
+            <i class="bi bi-buildings"></i>
+            <span>Clientes</span>
+        </a>
+
+        <a th:href="@{/inventario}" sec:authorize="hasAnyRole('ADMINISTRADOR', 'ALMACENERO')"
+           class="mobile-nav-item" th:classappend="${activeTab == 'inventario'} ? 'active'">
+            <i class="bi bi-box-seam"></i>
+            <span>Inventario</span>
+        </a>
+
+        <a th:href="@{/alertas}" sec:authorize="hasAnyRole('ADMINISTRADOR', 'ALMACENERO')"
+           class="mobile-nav-item" th:classappend="${activeTab == 'alertas'} ? 'active'">
+            <i class="bi bi-bell"></i>
+            <span>Alertas</span>
+        </a>
+
+        <!-- Botón "Más": activo si está en un módulo secundario -->
+        <button type="button" class="mobile-nav-item"
+                th:classappend="${#lists.contains({'ventas','clientes','compras','proveedores','reporte','usuarios'}, activeTab)} ? 'active'"
+                data-bs-toggle="offcanvas" data-bs-target="#mobileMenuSheet" aria-controls="mobileMenuSheet">
+            <i class="bi bi-grid-fill"></i>
+            <span>Más</span>
+        </button>
+    </nav>
+
+    <!-- 3. BOTTOM SHEET DESLIZABLE CON SCROLL VERTICAL (< 992px) -->
+    <div class="offcanvas offcanvas-bottom mobile-bottom-sheet d-lg-none border-0 shadow-lg"
+         tabindex="-1" id="mobileMenuSheet" aria-labelledby="mobileMenuSheetLabel">
+
+        <div class="offcanvas-header flex-column pb-2 pt-2 border-bottom">
+            <div class="bg-secondary bg-opacity-25 rounded-pill mb-2" style="width: 40px; height: 4px;"></div>
+            <div class="d-flex justify-content-between align-items-center w-100">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                         style="width: 36px; height: 36px;"
+                         th:text="${session.usuario_autenticado_nombre != null ? #strings.substring(session.usuario_autenticado_nombre, 0, 1) : 'U'}">U</div>
+                    <div>
+                        <div class="fw-bold text-dark small lh-1" id="mobileMenuSheetLabel"
+                             th:text="${session.usuario_autenticado_nombre != null ? session.usuario_autenticado_nombre : 'Usuario'}">Usuario</div>
+                        <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size: 0.65rem;"
+                              th:with="rolActual=${session.usuario_autenticado_rol != null ? session.usuario_autenticado_rol : #strings.replace(#authentication.getAuthorities()[0].getAuthority(), 'ROLE_', '')}"
+                              th:text="${rolActual == 'ADMINISTRADOR' ? 'ADMIN' : rolActual}">ROL</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
             </div>
         </div>
-        <form th:action="@{/logout}" method="post" class="m-0 p-0 flex-shrink-0">
-            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-            <button type="submit" class="btn btn-outline-light btn-sm d-flex align-items-center gap-1" title="Cerrar sesión">
-                <i class="bi bi-box-arrow-right"></i>
-                <span>Salir</span>
-            </button>
-        </form>
+
+        <div class="offcanvas-body overflow-y-auto py-3">
+            <div class="row g-2">
+                <div class="col-4" sec:authorize="hasRole('ADMINISTRADOR')">
+                    <a th:href="@{/dashboard}" class="sheet-grid-link" th:classappend="${activeTab == 'dashboard'} ? 'active'">
+                        <i class="bi bi-speedometer2 fs-4 text-primary"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </div>
+                <div class="col-4" sec:authorize="hasAnyRole('ADMINISTRADOR', 'VENDEDOR')">
+                    <a th:href="@{/venta}" class="sheet-grid-link" th:classappend="${activeTab == 'venta'} ? 'active'">
+                        <i class="bi bi-cart-check fs-4 text-info"></i>
+                        <span>Punto Venta</span>
+                    </a>
+                </div>
+                <div class="col-4" sec:authorize="hasAnyRole('ADMINISTRADOR', 'VENDEDOR')">
+                    <a th:href="@{/ventas}" class="sheet-grid-link" th:classappend="${activeTab == 'ventas'} ? 'active'">
+                        <i class="bi bi-receipt fs-4 text-primary"></i>
+                        <span>Ventas</span>
+                    </a>
+                </div>
+                <div class="col-4" sec:authorize="hasAnyRole('ADMINISTRADOR', 'VENDEDOR')">
+                    <a th:href="@{/clientes}" class="sheet-grid-link" th:classappend="${activeTab == 'clientes'} ? 'active'">
+                        <i class="bi bi-buildings fs-4 text-secondary"></i>
+                        <span>Clientes</span>
+                    </a>
+                </div>
+                <div class="col-4" sec:authorize="hasAnyRole('ADMINISTRADOR', 'ALMACENERO')">
+                    <a th:href="@{/inventario}" class="sheet-grid-link" th:classappend="${activeTab == 'inventario'} ? 'active'">
+                        <i class="bi bi-box-seam fs-4 text-warning"></i>
+                        <span>Inventario</span>
+                    </a>
+                </div>
+                <div class="col-4" sec:authorize="hasAnyRole('ADMINISTRADOR', 'ALMACENERO')">
+                    <a th:href="@{/compras}" class="sheet-grid-link" th:classappend="${activeTab == 'compras'} ? 'active'">
+                        <i class="bi bi-bag fs-4 text-primary"></i>
+                        <span>Compras</span>
+                    </a>
+                </div>
+                <div class="col-4" sec:authorize="hasAnyRole('ADMINISTRADOR', 'ALMACENERO')">
+                    <a th:href="@{/proveedores}" class="sheet-grid-link" th:classappend="${activeTab == 'proveedores'} ? 'active'">
+                        <i class="bi bi-truck fs-4 text-secondary"></i>
+                        <span>Proveedores</span>
+                    </a>
+                </div>
+                <div class="col-4" sec:authorize="hasAnyRole('ADMINISTRADOR', 'ALMACENERO')">
+                    <a th:href="@{/alertas}" class="sheet-grid-link" th:classappend="${activeTab == 'alertas'} ? 'active'">
+                        <i class="bi bi-bell fs-4 text-danger"></i>
+                        <span>Alertas</span>
+                    </a>
+                </div>
+                <div class="col-4" sec:authorize="hasRole('ADMINISTRADOR')">
+                    <a th:href="@{/reporte}" class="sheet-grid-link" th:classappend="${activeTab == 'reporte'} ? 'active'">
+                        <i class="bi bi-file-earmark-bar-graph fs-4 text-success"></i>
+                        <span>Reporte</span>
+                    </a>
+                </div>
+                <div class="col-4" sec:authorize="hasRole('ADMINISTRADOR')">
+                    <a th:href="@{/usuarios}" class="sheet-grid-link" th:classappend="${activeTab == 'usuarios'} ? 'active'">
+                        <i class="bi bi-people fs-4 text-dark"></i>
+                        <span>Usuarios</span>
+                    </a>
+                </div>
+            </div>
+
+            <form th:action="@{/logout}" method="post" class="mt-3 pt-2 border-top">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit" class="btn btn-outline-danger w-100 fw-semibold rounded-3 py-2">
+                    <i class="bi bi-box-arrow-right me-1"></i> Cerrar sesión
+                </button>
+            </form>
+        </div>
     </div>
-</div>
+
+</th:block>
+
+</body>
+</html>

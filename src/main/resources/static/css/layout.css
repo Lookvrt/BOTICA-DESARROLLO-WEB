@@ -1,0 +1,143 @@
+/* Layout Responsivo */
+.sidebar-desktop {
+    width: 260px;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1030;
+    overflow-y: auto;
+}
+
+/* Escritorio: mantiene el espacio exacto del sidebar */
+@media (min-width: 992px) {
+    body:has(.sidebar-desktop) main {
+        margin-left: 260px !important;
+    }
+}
+
+/* Móvil y Tablet (< 992px): libera el margen y deja espacio para la barra inferior */
+@media (max-width: 991.98px) {
+    body:has(.sidebar-desktop) main {
+        margin-left: 0 !important;
+        padding-bottom: 5.5rem !important;
+    }
+}
+
+/* Barra de navegación inferior móvil */
+.mobile-bottom-nav {
+    height: 64px;
+    background: #ffffff;
+    border-top: 1px solid #00000014;
+    box-shadow: 0 -4px 16px #0000000f;
+    z-index: 1030;
+}
+
+.mobile-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: #6c757d;
+    font-size: 0.72rem;
+    font-weight: 500;
+    gap: 2px;
+    border: none;
+    background: transparent;
+    padding: 6px 4px;
+    transition: color 0.15s ease;
+}
+
+.mobile-nav-item i {
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.mobile-nav-item.active,
+.mobile-nav-item:hover {
+    color: #0d6efd;
+    font-weight: 600;
+}
+
+.mobile-nav-item.active i {
+    background: #0d6efd1f;
+    padding: 3px 14px;
+    border-radius: 999px;
+}
+
+/* Hoja inferior desplegable ("Más") */
+.mobile-bottom-sheet {
+    height: auto !important;
+    max-height: 82vh;
+    border-top-left-radius: 1.25rem;
+    border-top-right-radius: 1.25rem;
+}
+
+.sheet-grid-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0.85rem 0.5rem;
+    border-radius: 0.85rem;
+    background-color: #f8f9fa;
+    color: #212529;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 600;
+    gap: 0.4rem;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+}
+
+.sheet-grid-link.active {
+    background-color: #0d6efd1a;
+    color: #0d6efd;
+    border-color: #0d6efd40;
+}
+
+/* Pie de usuario en Sidebar Desktop */
+.sidebar-avatar {
+    width: 38px;
+    height: 38px;
+    font-size: 1rem;
+}
+
+.sidebar-username {
+    font-size: 0.92rem;
+}
+
+.sidebar-role-badge {
+    font-size: 0.64rem;
+    letter-spacing: 0.05em;
+    padding: 0.25rem 0.5rem;
+    background-color: #00000033;
+    color: #a5f3fc;
+    border: 1px solid #a5f3fc40;
+}
+
+/* Botón Salir en Sidebar Desktop */
+.btn-sidebar-logout {
+    background-color: #ffffff24;
+    border: 1px solid #ffffff38;
+    color: #ffffff;
+    font-size: 0.8rem;
+    transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+}
+
+.btn-sidebar-logout:hover,
+.btn-sidebar-logout:focus {
+    background-color: #00000042;
+    border-color: #00000052;
+    color: #ffffff;
+}
+
+.btn-sidebar-logout:active {
+    background-color: #00000061 !important;
+    border-color: #00000073 !important;
+    color: #ffffff !important;
+    transform: scale(0.97);
+}
