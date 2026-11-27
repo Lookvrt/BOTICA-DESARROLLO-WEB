@@ -23,7 +23,8 @@ COPY --from=builder /app/target/*.jar app.jar
 
 # Puerto asignado por Render (por defecto 8080)
 ENV PORT=8080
+ENV TZ=America/Lima
 EXPOSE 8080
 
 # Control de memoria para el plan gratuito de Render (512MB RAM)
-ENTRYPOINT ["sh", "-c", "java -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "java -Duser.timezone=America/Lima -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -jar app.jar"]

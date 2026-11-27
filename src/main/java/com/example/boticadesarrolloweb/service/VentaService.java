@@ -12,11 +12,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
+import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
 public class VentaService {
 
+    public static final ZoneId ZONA_LIMA = ZoneId.of("America/Lima");
     private final VentaRepository ventaRepository;
 
     @Transactional(readOnly = true)

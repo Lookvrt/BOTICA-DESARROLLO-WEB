@@ -35,7 +35,7 @@ public class DashboardController {
 
         BigDecimal ventasHoy = ventaService.obtenerVentasHoy();
 
-        YearMonth mesActual = YearMonth.now();
+        YearMonth mesActual = YearMonth.now(VentaService.ZONA_LIMA);
         LocalDateTime inicioMes = mesActual.atDay(1).atStartOfDay();
         LocalDateTime finMes = mesActual.atEndOfMonth().atTime(LocalTime.MAX);
         BigDecimal comprasMes = compraRepository.sumarTotalPorRangoFechas(EstadoCompra.REGISTRADA, inicioMes, finMes);

@@ -60,10 +60,12 @@ public interface VentaRepository extends JpaRepository<VentaEntity, Integer> {
                                            @Param("fin") LocalDateTime fin);
 
     // 2. Ventas por Día (Últimos N días)
-    @Query(value = "SELECT DATE(v.fecha_venta) as fecha, SUM(v.total) as total " +
+    // La fecha se devuelve como texto (yyyy-MM-dd): un DATE llegaría como java.sql.Date y su toString()
+    // depende de la zona horaria de la JVM, lo que corría las barras un día según el entorno.
+    @Query(value = "SELECT DATE_FORMAT(v.fecha_venta, '%Y-%m-%d') as fecha, SUM(v.total) as total " +
             "FROM ventas v " +
             "WHERE v.estado = 'REGISTRADA' AND v.fecha_venta >= :desde " +
-            "GROUP BY DATE(v.fecha_venta) " +
+            "GROUP BY DATE_FORMAT(v.fecha_venta, '%Y-%m-%d') " +
             "ORDER BY fecha ASC", nativeQuery = true)
     List<Object[]> obtenerVentasDiariasDesde(@Param("desde") LocalDateTime desde);
 
