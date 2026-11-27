@@ -123,7 +123,11 @@ public class InventarioController {
                         .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado"));
 
                 if (codigo != null && !codigo.isBlank()) {
-                    actual.setCodigo(codigo.trim().toUpperCase());
+                    String nuevoCodigo = codigo.trim().toUpperCase();
+                    if (!nuevoCodigo.equals(actual.getCodigo())) {
+                        productoService.validarCodigoDisponible(nuevoCodigo, actual.getIdProducto());
+                        actual.setCodigo(nuevoCodigo);
+                    }
                 }
 
                 actual.setNombre(nombre.trim());
@@ -142,6 +146,8 @@ public class InventarioController {
                         "Producto '" + actual.getNombre() + "' actualizado correctamente.");
             }
 
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("mensajeError", "No se pudo guardar el producto: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error al guardar producto: {}", e.getMessage(), e);
             redirectAttributes.addFlashAttribute("mensajeError",
@@ -187,6 +193,8 @@ public class InventarioController {
             redirectAttributes.addFlashAttribute("mensajeExito",
                     "Lote " + lote.getNumeroLote() + " registrado con " + cantidad + " unidades para " + producto.getNombre() + ".");
 
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("mensajeError", "No se pudo registrar el lote: " + e.getMessage());
         } catch (Exception e) {
             log.error("Error al registrar lote: {}", e.getMessage(), e);
             redirectAttributes.addFlashAttribute("mensajeError",
@@ -214,6 +222,15 @@ public class InventarioController {
             redirectAttributes.addFlashAttribute("mensajeError", "No se pudo eliminar el producto.");
         }
         return "redirect:/inventario";
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // [5a] Endpoint JSON: Siguiente código de producto libre (MED###)
+    // ─────────────────────────────────────────────────────────────
+    @GetMapping("/api/siguiente-codigo")
+    @ResponseBody
+    public Map<String, String> siguienteCodigo() {
+        return Map.of("codigo", productoService.generarSiguienteCodigo());
     }
 
     // ─────────────────────────────────────────────────────────────

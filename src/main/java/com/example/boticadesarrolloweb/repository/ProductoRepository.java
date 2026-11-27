@@ -32,4 +32,14 @@ public interface ProductoRepository extends JpaRepository<ProductoEntity, Intege
 
     @Query("SELECT p FROM ProductoEntity p LEFT JOIN FETCH p.categoria ORDER BY p.idProducto DESC")
     List<ProductoEntity> findAllConCategoria();
+
+    /** Mayor número entre los códigos MED### (SQL nativo: incluye productos dados de baja, cuyo código sigue ocupado). */
+    @Query(value = "SELECT COALESCE(MAX(CAST(SUBSTRING(codigo, 4) AS UNSIGNED)), 0) FROM productos " +
+            "WHERE codigo REGEXP '^MED[0-9]+$'", nativeQuery = true)
+    Integer maxNumeroCodigoMed();
+
+    /** Cuántos productos usan el código (activos o dados de baja), sin contar el producto indicado. */
+    @Query(value = "SELECT COUNT(*) FROM productos WHERE codigo = :codigo AND id_producto <> :idExcluir",
+            nativeQuery = true)
+    long contarPorCodigo(@Param("codigo") String codigo, @Param("idExcluir") Integer idExcluir);
 }

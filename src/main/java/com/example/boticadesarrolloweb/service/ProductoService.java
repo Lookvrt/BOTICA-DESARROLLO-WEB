@@ -26,23 +26,7 @@ public class ProductoService {
 
     @Transactional(readOnly = true)
     public String generarSiguienteCodigo() {
-        List<ProductoEntity> productos = productoRepository.findAllConCategoria();
-        int maxNumero = 0;
-
-        for (ProductoEntity p : productos) {
-            if (p.getCodigo() != null && p.getCodigo().toUpperCase().startsWith("MED")) {
-                try {
-                    int num = Integer.parseInt(p.getCodigo().substring(3).trim());
-                    if (num > maxNumero) {
-                        maxNumero = num;
-                    }
-                } catch (NumberFormatException ignored) {
-                    // Si un código no tiene sufijo numérico válido, se ignora
-                }
-            }
-        }
-
-        return String.format("MED%03d", maxNumero + 1);
+        return String.format("MED%03d", productoRepository.maxNumeroCodigoMed() + 1);
     }
 
     public List<ProductoEntity> listar(String query, Integer idCategoria) {
@@ -76,7 +60,16 @@ public class ProductoService {
     }
 
     public boolean existeCodigo(String codigo) {
-        return productoRepository.existsByCodigo(codigo.trim().toUpperCase());
+        return productoRepository.contarPorCodigo(codigo.trim().toUpperCase(), 0) > 0;
+    }
+
+    /** Lanza IllegalArgumentException si otro producto, activo o dado de baja, ya usa el código. */
+    @Transactional(readOnly = true)
+    public void validarCodigoDisponible(String codigo, Integer idExcluir) {
+        if (productoRepository.contarPorCodigo(codigo, idExcluir != null ? idExcluir : 0) > 0) {
+            throw new IllegalArgumentException("El código " + codigo
+                    + " ya está en uso (puede pertenecer a un producto dado de baja).");
+        }
     }
 
     @Transactional
@@ -90,7 +83,7 @@ public class ProductoService {
         } else {
             producto.setCodigo(producto.getCodigo().trim().toUpperCase());
         }
-
+        validarCodigoDisponible(producto.getCodigo(), null);
         if (producto.getEstado() == null) {
             producto.setEstado(1);
         }
