@@ -9,10 +9,43 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Collection;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public interface LoteRepository extends JpaRepository<LoteEntity, Integer> {
 
     List<LoteEntity> findByProductoIdProductoOrderByFechaVencimientoAsc(Integer idProducto);
+
+    /** Lotes de varios productos en una sola consulta (evita una consulta por producto). */
+    List<LoteEntity> findByProductoIdProductoInOrderByFechaVencimientoAsc(Collection<Integer> idsProducto);
+
+    @Query("SELECT l.producto.idProducto, SUM(l.stockActual) FROM LoteEntity l " +
+            "WHERE l.producto.idProducto IN :ids AND l.stockActual > 0 AND l.fechaVencimiento >= :hoy " +
+            "GROUP BY l.producto.idProducto")
+    List<Object[]> sumStockVendiblePorProductos(@Param("ids") Collection<Integer> ids, @Param("hoy") LocalDate hoy);
+
+    @Query("SELECT l.producto.idProducto, SUM(l.stockActual) FROM LoteEntity l " +
+            "WHERE l.producto.idProducto IN :ids GROUP BY l.producto.idProducto")
+    List<Object[]> sumStockPorProductos(@Param("ids") Collection<Integer> ids);
+
+    /** Stock vendible (con stock y no vencido) por producto, en una sola consulta. Sin lotes = sin entrada en el mapa. */
+    default Map<Integer, Integer> stockVendiblePorProducto(Collection<Integer> ids, LocalDate hoy) {
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        return sumStockVendiblePorProductos(ids, hoy).stream().collect(Collectors.toMap(
+                fila -> ((Number) fila[0]).intValue(), fila -> ((Number) fila[1]).intValue()));
+    }
+
+    /** Stock total por producto, en una sola consulta. Sin lotes = sin entrada en el mapa. */
+    default Map<Integer, Integer> stockTotalPorProducto(Collection<Integer> ids) {
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        return sumStockPorProductos(ids).stream().collect(Collectors.toMap(
+                fila -> ((Number) fila[0]).intValue(), fila -> ((Number) fila[1]).intValue()));
+    }
 
     @Query("SELECT COALESCE(SUM(l.stockActual), 0) FROM LoteEntity l WHERE l.producto.idProducto = :idProducto")
     Integer sumStockByProductoId(@Param("idProducto") Integer idProducto);

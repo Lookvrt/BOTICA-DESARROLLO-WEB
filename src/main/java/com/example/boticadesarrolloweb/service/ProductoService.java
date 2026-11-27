@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -37,10 +38,15 @@ public class ProductoService {
     public List<InventarioItemDto> listarInventario(String query, Integer idCategoria, String filtroStock) {
         List<ProductoEntity> productos = listar(query, idCategoria);
 
-        List<InventarioItemDto> items = productos.stream().map(p -> {
-            List<LoteEntity> lotes = loteRepository.findByProductoIdProductoOrderByFechaVencimientoAsc(p.getIdProducto());
-            return InventarioItemDto.from(p, lotes);
-        }).collect(Collectors.toList());
+        Map<Integer, List<LoteEntity>> lotesPorProducto = productos.isEmpty() ? Map.of()
+                : loteRepository.findByProductoIdProductoInOrderByFechaVencimientoAsc(
+                        productos.stream().map(ProductoEntity::getIdProducto).toList())
+                .stream()
+                .collect(Collectors.groupingBy(l -> l.getProducto().getIdProducto()));
+
+        List<InventarioItemDto> items = productos.stream()
+                .map(p -> InventarioItemDto.from(p, lotesPorProducto.getOrDefault(p.getIdProducto(), List.of())))
+                .collect(Collectors.toList());
 
         if (filtroStock != null && !filtroStock.isBlank() && !filtroStock.equalsIgnoreCase("TODOS")) {
             items = items.stream()

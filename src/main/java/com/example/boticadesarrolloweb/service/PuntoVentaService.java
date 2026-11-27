@@ -51,14 +51,13 @@ public class PuntoVentaService {
             return List.of();
         }
         LocalDate hoy = LocalDate.now();
-        return productoRepository.buscarParaVenta(q.trim(), PageRequest.of(0, MAX_RESULTADOS)).stream()
+        List<ProductoEntity> productos = productoRepository.buscarParaVenta(q.trim(), PageRequest.of(0, MAX_RESULTADOS));
+        Map<Integer, Integer> stock = loteRepository.stockVendiblePorProducto(
+                productos.stream().map(ProductoEntity::getIdProducto).toList(), hoy);
+        return productos.stream()
                 .map(p -> new ProductoVenta(
-                        p.getIdProducto(),
-                        p.getCodigo(),
-                        p.getNombre(),
-                        p.getPresentacion(),
-                        p.getPrecioVenta(),
-                        loteRepository.sumStockVendible(p.getIdProducto(), hoy),
+                        p.getIdProducto(), p.getCodigo(), p.getNombre(), p.getPresentacion(), p.getPrecioVenta(),
+                        stock.getOrDefault(p.getIdProducto(), 0),
                         p.getRequiereReceta() != null && p.getRequiereReceta() == 1))
                 .toList();
     }

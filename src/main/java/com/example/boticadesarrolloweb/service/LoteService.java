@@ -42,10 +42,6 @@ public class LoteService {
         return loteRepository.save(lote);
     }
 
-    public void eliminar(Integer idLote) {
-        loteRepository.deleteById(idLote);
-    }
-
     public List<LoteEntity> listarProximosAVencer(int dias) {
         LocalDate hoy = LocalDate.now();
         LocalDate limite = hoy.plusDays(dias);

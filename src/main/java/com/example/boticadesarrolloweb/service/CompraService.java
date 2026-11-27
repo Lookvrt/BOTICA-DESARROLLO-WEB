@@ -123,10 +123,12 @@ public class CompraService {
         if (q == null || q.isBlank()) {
             return List.of();
         }
-        return productoRepository.buscarParaVenta(q.trim(), PageRequest.of(0, 20)).stream()
+        List<ProductoEntity> productos = productoRepository.buscarParaVenta(q.trim(), PageRequest.of(0, 20));
+        Map<Integer, Integer> stock = loteRepository.stockTotalPorProducto(
+                productos.stream().map(ProductoEntity::getIdProducto).toList());
+        return productos.stream()
                 .map(p -> new ProductoCompra(p.getIdProducto(), p.getCodigo(), p.getNombre(), p.getPresentacion(),
-                        p.getPrecioCompra(), loteRepository.sumStockByProductoId(p.getIdProducto()),
-                        p.getStockMinimo()))
+                        p.getPrecioCompra(), stock.getOrDefault(p.getIdProducto(), 0), p.getStockMinimo()))
                 .toList();
     }
 

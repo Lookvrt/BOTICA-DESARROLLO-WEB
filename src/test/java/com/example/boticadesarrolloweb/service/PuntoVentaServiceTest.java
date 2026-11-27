@@ -80,6 +80,7 @@ class PuntoVentaServiceTest {
         LoteEntity primerLote = detalles.get(0).getLote();
         loteRepository.findByProductoIdProductoOrderByFechaVencimientoAsc(p.idProducto()).stream()
                 .filter(l -> !l.getFechaVencimiento().isBefore(hoy))
+                .filter(l -> l.getStockActual() > 0)   // FEFO solo considera lotes con stock
                 .findFirst()
                 .ifPresent(l -> assertFalse(l.getFechaVencimiento().isBefore(primerLote.getFechaVencimiento())));
     }
