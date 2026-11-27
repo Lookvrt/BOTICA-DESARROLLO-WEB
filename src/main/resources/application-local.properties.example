@@ -1,0 +1,21 @@
+# ─────────────────────────────────────────────────────────
+# PLANTILLA DE CONFIGURACIÓN LOCAL (Botica Ahorro y Salud)
+# Copia este archivo como 'application-local.properties' y
+# coloca las credenciales compartidas por el equipo:
+# ─────────────────────────────────────────────────────────
+
+spring.datasource.password=PEGA_AQUI_PASSWORD_AIVEN
+spring.mail.password=PEGA_AQUI_PASSWORD_MAILTRAP
+
+spring.thymeleaf.cache=false
+
+spring.jpa.hibernate.ddl-auto=update
+
+# Google OAuth2 (Login con Google)
+spring.security.oauth2.client.registration.google.client-id=PEGA_AQUI_CLIENT_ID
+spring.security.oauth2.client.registration.google.client-secret=PEGA_AQUI_CLIENT_SECRET
+
+app.seed.enabled=true
+app.security.otp.log-codigo=true
+spring.jpa.show-sql=true
+spring.mail.properties.mail.debug=false
