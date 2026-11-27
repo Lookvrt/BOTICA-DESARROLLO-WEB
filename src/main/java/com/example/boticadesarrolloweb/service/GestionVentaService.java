@@ -47,6 +47,35 @@ public class GestionVentaService {
         return ventaRepository.buscarParaListado(q != null ? q.trim() : null);
     }
 
+    /** Id del usuario a partir de su username o email (para sesiones remember-me o pruebas). */
+    @Transactional(readOnly = true)
+    public Integer idUsuarioDe(String nombreAutenticacion) {
+        return usuarioRepository.findByUsuario(nombreAutenticacion)
+                .or(() -> usuarioRepository.findByEmail(nombreAutenticacion))
+                .map(UsuarioEntity::getIdUsuario)
+                .orElseThrow(() -> new VentaException("No se pudo identificar al usuario de la sesión."));
+    }
+
+    /** Id del usuario que registró la venta (null si no existe), para mostrar el responsable en el formulario. */
+    @Transactional(readOnly = true)
+    public Integer idResponsable(Integer idVenta) {
+        return ventaRepository.findById(idVenta)
+                .map(VentaEntity::getUsuario)
+                .map(UsuarioEntity::getIdUsuario)
+                .orElse(null);
+    }
+
+    /** Nombre completo de un usuario (cadena vacía si no existe). */
+    @Transactional(readOnly = true)
+    public String nombreUsuario(Integer idUsuario) {
+        if (idUsuario == null) {
+            return "";
+        }
+        return usuarioRepository.findById(idUsuario)
+                .map(u -> (u.getNombres() + " " + u.getApellidos()).trim())
+                .orElse("");
+    }
+
     /** Carga una venta con una línea por producto para el modal de edición. */
     @Transactional(readOnly = true)
     public Venta cargarParaEditar(Integer idVenta) {
@@ -80,7 +109,6 @@ public class GestionVentaService {
                 .fechaVenta(venta.getFechaVenta())
                 .tipoComprobante(venta.getTipoComprobante())
                 .numeroComprobante(venta.getNumeroComprobante())
-                .vendedor(venta.getUsuario().getNombres() + " " + venta.getUsuario().getApellidos())
                 .total(venta.getTotal())
                 .estado(venta.getEstado())
                 .detalles(new ArrayList<>(porProducto.values()))
@@ -97,7 +125,6 @@ public class GestionVentaService {
                 form.setTipoComprobante(v.getTipoComprobante());
                 form.setNumeroComprobante(v.getNumeroComprobante());
                 form.setFechaVenta(v.getFechaVenta());
-                form.setVendedor(v.getUsuario().getNombres() + " " + v.getUsuario().getApellidos());
             });
             for (DetalleVentaEntity d : detalleVentaRepository.findByVentaConLote(form.getIdVenta())) {
                 enEstaVenta.merge(d.getProducto().getIdProducto(), d.getCantidad(), Integer::sum);

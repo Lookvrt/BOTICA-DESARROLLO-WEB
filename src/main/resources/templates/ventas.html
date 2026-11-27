@@ -192,7 +192,8 @@
 
                         <div class="col-md-6 col-lg-2">
                             <label class="form-label fw-semibold">Vendedor</label>
-                            <div class="form-control bg-light text-truncate" th:text="*{vendedor} ?: 'Tú'">Tú</div>
+                            <div class="form-control bg-light text-truncate"
+                                 th:text="${responsable}">Tú</div>
                         </div>
                     </div>
 
