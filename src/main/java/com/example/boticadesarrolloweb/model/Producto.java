@@ -20,8 +20,6 @@ public class Producto {
     @Size(max = 150, message = "El nombre no debe superar 150 caracteres")
     private String nombre;
 
-    private String descripcion;
-
     @Size(max = 150, message = "El principio activo no debe superar 150 caracteres")
     private String principioActivo;
 

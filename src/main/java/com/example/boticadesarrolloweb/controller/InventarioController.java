@@ -74,7 +74,6 @@ public class InventarioController {
     public String guardar(@RequestParam(required = false) Integer idProducto,
                           @RequestParam(required = false) String codigo,
                           @RequestParam String nombre,
-                          @RequestParam(required = false) String descripcion,
                           @RequestParam(required = false) String principioActivo,
                           @RequestParam(required = false) String concentracion,
                           @RequestParam(required = false) String presentacion,
@@ -102,7 +101,6 @@ public class InventarioController {
                 ProductoEntity nuevo = ProductoEntity.builder()
                         .codigo(codigoFinal)
                         .nombre(nombre.trim())
-                        .descripcion(descripcion)
                         .principioActivo(principioActivo)
                         .concentracion(concentracion)
                         .presentacion(presentacion)
@@ -131,7 +129,6 @@ public class InventarioController {
                 }
 
                 actual.setNombre(nombre.trim());
-                actual.setDescripcion(descripcion);
                 actual.setPrincipioActivo(principioActivo);
                 actual.setConcentracion(concentracion);
                 actual.setPresentacion(presentacion);
@@ -245,7 +242,6 @@ public class InventarioController {
                     data.put("idProducto", p.getIdProducto());
                     data.put("codigo", p.getCodigo());
                     data.put("nombre", p.getNombre());
-                    data.put("descripcion", p.getDescripcion());
                     data.put("principioActivo", p.getPrincipioActivo());
                     data.put("concentracion", p.getConcentracion());
                     data.put("presentacion", p.getPresentacion());

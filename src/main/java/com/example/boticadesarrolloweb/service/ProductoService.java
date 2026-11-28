@@ -133,7 +133,6 @@ public class ProductoService {
     public ProductoEntity actualizar(ProductoEntity producto) {
         return productoRepository.findById(producto.getIdProducto()).map(actual -> {
             actual.setNombre(producto.getNombre().trim());
-            actual.setDescripcion(producto.getDescripcion());
             actual.setPrincipioActivo(producto.getPrincipioActivo());
             actual.setConcentracion(producto.getConcentracion());
             actual.setPresentacion(producto.getPresentacion());

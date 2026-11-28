@@ -28,9 +28,6 @@ public class ProductoEntity {
     @Column(name = "nombre", nullable = false, length = 150)
     private String nombre;
 
-    @Column(name = "descripcion", columnDefinition = "TEXT")
-    private String descripcion;
-
     @Column(name = "principio_activo", length = 150)
     private String principioActivo;
 

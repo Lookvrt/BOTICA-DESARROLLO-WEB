@@ -111,28 +111,28 @@ public class DataInitializer implements CommandLineRunner {
 
                                 // 1. Paracetamol
                                 crearProductoConLote("MED001", "Paracetamol 500mg x100",
-                                        "Paracetamol genérico para dolor y fiebre", "Paracetamol", "500 mg",
+                                        "Paracetamol", "500 mg",
                                         "Caja x 100 tabletas", catAnalgesicos,
                                         new BigDecimal("8.50"), new BigDecimal("15.00"), 10, 0,
                                         "LT-2024-PAR1", LocalDate.now().plusMonths(18), 120);
 
                                 // 2. Amoxicilina (Requiere receta - Stock bajo para alerta)
                                 crearProductoConLote("MED002", "Amoxicilina 500mg x20",
-                                        "Antibiótico de amplio espectro", "Amoxicilina", "500 mg",
+                                        "Amoxicilina", "500 mg",
                                         "Caja x 20 cápsulas", catAntibioticos,
                                         new BigDecimal("12.00"), new BigDecimal("22.50"), 15, 1,
                                         "LT-2024-AMX2", LocalDate.now().plusMonths(8), 6);
 
                                 // 3. Ibuprofeno 400mg
                                 crearProductoConLote("MED003", "Ibuprofeno 400mg x50",
-                                        "Antiinflamatorio no esteroideo (AINE)", "Ibuprofeno", "400 mg",
+                                        "Ibuprofeno", "400 mg",
                                         "Caja x 50 tabletas recubiertas", catAntiinflamatorios,
                                         new BigDecimal("6.00"), new BigDecimal("12.00"), 10, 0,
                                         "LT-2024-IBU1", LocalDate.now().plusMonths(24), 85);
 
                                 // 4. Cetirizina 10mg
                                 crearProductoConLote("MED004", "Cetirizina 10mg x30",
-                                        "Antihistamínico para alergias y urticaria", "Cetirizina Clorhidrato",
+                                        "Cetirizina Clorhidrato",
                                         "10 mg",
                                         "Caja x 30 comprimidos", catAntihistaminicos,
                                         new BigDecimal("5.50"), new BigDecimal("11.00"), 8, 0,
@@ -140,7 +140,7 @@ public class DataInitializer implements CommandLineRunner {
 
                                 // 5. Omeprazol 20mg
                                 crearProductoConLote("MED005", "Omeprazol 20mg x30",
-                                        "Inhibidor de bomba de protones, protector gástrico", "Omeprazol",
+                                        "Omeprazol",
                                         "20 mg",
                                         "Caja x 30 cápsulas con microgránulos", catGastro,
                                         new BigDecimal("7.00"), new BigDecimal("14.50"), 10, 0,
@@ -148,23 +148,23 @@ public class DataInitializer implements CommandLineRunner {
 
                                 // 6. Complejo B Forte
                                 crearProductoConLote("MED006", "Complejo B Forte x60",
-                                        "Suplemento multivitamínico del complejo B", "Vitaminas B1, B6, B12",
-                                        "Forte",
-                                        "Frasco x 60 cápsulas blandas", catVitaminas,
+                                        "Suplemento multivitamínico del complejo B",
+                                        "Vitaminas B1, B6, B12", "Forte", catVitaminas,
                                         new BigDecimal("18.00"), new BigDecimal("32.00"), 5, 0,
                                         "LT-2024-CBF1", LocalDate.now().plusMonths(20), 25);
 
                                 // 7. Azitromicina 500mg (Próximo a vencer para pruebas de alerta)
                                 crearProductoConLote("MED007", "Azitromicina 500mg x3",
-                                        "Antibiótico macrólido de dosis diaria", "Azitromicina", "500 mg",
-                                        "Caja x 3 tabletas", catAntibioticos,
+                                        "Antibiótico macrólido de dosis diaria",
+                                        "Azitromicina",
+                                        "500 mg", catAntibioticos,
                                         new BigDecimal("9.00"), new BigDecimal("18.00"), 5, 1,
                                         "LT-2024-AZI1", LocalDate.now().plusDays(25), 14);
 
                                 // 8. Alcohol Medicinal 70°
                                 crearProductoConLote("MED008", "Alcohol Medicinal 70° 500ml",
-                                        "Antiséptico de uso externo y desinfección", "Etanol 70°", "70%",
-                                        "Frasco x 500 ml", catCuidado,
+                                        "Antiséptico de uso externo y desinfección",
+                                        "Etanol 70°", "70%", catCuidado,
                                         new BigDecimal("3.20"), new BigDecimal("6.50"), 12, 0,
                                         "LT-2024-ALC1", LocalDate.now().plusYears(3), 60);
 
@@ -173,7 +173,7 @@ public class DataInitializer implements CommandLineRunner {
                 }
         }
 
-        private void crearProductoConLote(String codigo, String nombre, String desc,
+        private void crearProductoConLote(String codigo, String nombre,
                                           String pActivo, String conc, String pres,
                                           CategoriaEntity cat, BigDecimal pCompra, BigDecimal pVenta,
                                           int stockMin, int receta, String nroLote,
@@ -182,7 +182,6 @@ public class DataInitializer implements CommandLineRunner {
                 ProductoEntity p = productoRepository.save(ProductoEntity.builder()
                         .codigo(codigo)
                         .nombre(nombre)
-                        .descripcion(desc)
                         .principioActivo(pActivo)
                         .concentracion(conc)
                         .presentacion(pres)
