@@ -21,7 +21,7 @@ public class AlertaService {
     @Transactional(readOnly = true)
     public List<InventarioItemDto> listarProductosBajoStockMinimo() {
         return productoService.listarInventario(null, null, null).stream()
-                .filter(i -> i.getStockTotal() < stockMinimo(i))
+                .filter(i -> i.getStockVendible() < stockMinimo(i))
                 .sorted(Comparator.comparingInt((InventarioItemDto i) -> stockMinimo(i) - i.getStockTotal()).reversed())
                 .toList();
     }

@@ -56,10 +56,10 @@
                         <td class="py-3 text-start" th:text="${item.producto.codigo}">MED002</td>
                         <td class="text-start" th:text="${item.producto.nombre}">Amoxicilina 500mg x12</td>
                         <td th:text="${item.producto.principioActivo ?: '-'}">Amoxicilina</td>
-                        <td class="fw-medium" th:classappend="${item.stockTotal == 0} ? 'text-danger'"
-                            th:text="${item.stockTotal}">5</td>
+                        <td class="fw-medium" th:classappend="${item.stockVendible == 0} ? 'text-danger'"
+                            th:text="${item.stockVendible}">5</td>
                         <td th:text="${item.producto.stockMinimo}">20</td>
-                        <td class="text-danger fw-medium" th:text="${item.producto.stockMinimo - item.stockTotal}">15</td>
+                        <td class="text-danger fw-medium" th:text="${item.producto.stockMinimo - item.stockVendible}">15</td>
                         <td class="text-end">
                             <a th:href="@{/compras(alerta=${item.producto.idProducto})}"
                                title="Abre una nueva compra en Compras con este producto"

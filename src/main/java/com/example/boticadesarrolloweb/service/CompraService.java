@@ -149,10 +149,10 @@ public class CompraService {
                     .idProducto(p.getIdProducto())
                     .codigoProducto(p.getCodigo())
                     .nombreProducto(p.getNombre())
-                    .stockActual(item.getStockTotal())
+                    .stockActual(item.getStockVendible())
                     .stockMinimo(minimo)
                     .cantidadMinima(minimo + 1)
-                    .cantidad(2 * minimo - item.getStockTotal())
+                    .cantidad(2 * minimo - item.getStockVendible())
                     .precioUnitario(p.getPrecioCompra())
                     .build());
         }

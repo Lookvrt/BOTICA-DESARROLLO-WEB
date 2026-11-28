@@ -208,7 +208,7 @@
                             <tbody>
                             <tr th:each="item : ${productosCriticos}">
                                 <td class="text-start fw-semibold text-dark" th:text="${item.producto.nombre}">Producto</td>
-                                <td class="text-danger fw-bold" th:text="${item.stockTotal}">0</td>
+                                <td class="text-danger fw-bold" th:text="${item.stockVendible}">0</td>
                                 <td class="text-muted" th:text="${item.producto.stockMinimo}">0</td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(productosCriticos)}">
