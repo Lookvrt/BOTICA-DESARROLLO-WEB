@@ -226,6 +226,7 @@ public class CompraService {
         LoteEntity lote = loteRepository.save(LoteEntity.builder()
                 .producto(producto)
                 .numeroLote(resolverNumeroLote(producto, d.getNumeroLote(), hoy))
+                .fechaFabricacion(hoy)
                 .fechaVencimiento(d.getFechaVencimiento())
                 .cantidadInicial(d.getCantidad())
                 .stockActual(d.getCantidad())

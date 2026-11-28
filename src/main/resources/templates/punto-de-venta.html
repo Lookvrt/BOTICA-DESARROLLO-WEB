@@ -91,7 +91,7 @@
                                     <div class="d-flex flex-wrap gap-1 align-items-center">
                                         <span class="badge"
                                               th:classappend="${item.estadoStock == 'CRITICO'} ? 'bg-warning text-dark' : 'bg-success bg-opacity-10 text-success'"
-                                              th:text="'Stock: ' + ${item.stockTotal}">
+                                              th:text="'Stock: ' + ${item.stockVendible}">
                                             Stock: 10
                                         </span>
                                         <span th:if="${item.producto.requiereReceta == 1}"
@@ -106,7 +106,7 @@
                                             th:data-id="${item.producto.idProducto}"
                                             th:data-nombre="${item.producto.nombre}"
                                             th:data-precio="${item.producto.precioVenta}"
-                                            th:data-stock="${item.stockTotal}"
+                                            th:data-stock="${item.stockVendible}"
                                             th:data-receta="${item.producto.requiereReceta}">
                                         <i class="bi bi-plus-lg"></i> Agregar
                                     </button>

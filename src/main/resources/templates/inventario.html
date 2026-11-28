@@ -209,7 +209,7 @@
 
                         <!-- Stock Actual y Mínimo -->
                         <td class="py-3 text-center">
-                            <span class="fw-bold fs-6" th:text="${item.stockTotal}">120</span>
+                            <span class="fw-bold fs-6" th:text="${item.stockVendible}">120</span>
                             <div class="text-muted small" th:text="${'Mín: ' + item.producto.stockMinimo}">Mín: 10</div>
                         </td>
 
@@ -231,17 +231,21 @@
                         <td class="py-3 text-center text-nowrap">
                             <div th:if="${item.fechaProximoVencimiento != null}">
                                 <span class="small fw-semibold"
-                                      th:classappend="${item.vencido} ? 'text-danger fw-bold' : (${item.proximoAVencer} ? 'text-warning fw-bold' : 'text-dark')"
-                                      th:text="${#temporals.format(item.fechaProximoVencimiento, 'dd/MM/yyyy')}">
-                                    15/12/2025
+                                    th:classappend="${item.proximoAVencer} ? 'text-warning fw-bold' : 'text-dark'"
+                                    th:text="${#temporals.format(item.fechaProximoVencimiento, 'dd/MM/yyyy')}">
+                                15/12/2025
                                 </span>
-                                <div th:if="${item.vencido}" class="badge bg-danger text-white small d-block mt-1" style="font-size: 0.65rem;">¡Vencido!</div>
-                                <div th:if="${!item.vencido && item.proximoAVencer}" class="badge bg-warning text-dark small d-block mt-1" style="font-size: 0.65rem;"
+                                <div th:if="${item.proximoAVencer}" class="badge bg-warning text-dark small d-block mt-1" style="font-size: 0.65rem;"
                                      th:text="${item.diasParaVencimiento + ' días'}">20 días</div>
                             </div>
-                            <div th:if="${item.fechaProximoVencimiento == null}" class="text-muted small">
+                            <!-- Sin lotes vigentes: o no hay lotes, o todo lo que queda está vencido -->
+                            <div th:if="${item.fechaProximoVencimiento == null && !item.vencido}" class="text-muted small">
                                 Sin lotes
                             </div>
+                            <div th:if="${item.vencido}" class="badge bg-danger text-white small d-block" style="font-size: 0.65rem;">¡Vencido!</div>
+                            <!-- Unidades vencidas pendientes de dar de baja (aunque el producto tenga otros lotes vigentes) -->
+                            <div th:if="${!item.vencido && item.unidadesVencidas > 0}" class="badge bg-danger bg-opacity-10 text-danger small d-block mt-1" style="font-size: 0.65rem;"
+                                 th:text="${item.unidadesVencidas + ' uds vencidas'}">5 uds vencidas</div>
                         </td>
 
                         <!-- Acciones -->

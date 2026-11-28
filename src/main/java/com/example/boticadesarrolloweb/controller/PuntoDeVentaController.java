@@ -34,7 +34,7 @@ public class PuntoDeVentaController {
     public String mostrarPuntoVenta(Model model) {
         List<InventarioItemDto> productosDisponibles = productoService.listarInventario(null, null, null)
                 .stream()
-                .filter(item -> item.getStockTotal() != null && item.getStockTotal() > 0)
+                .filter(item -> item.getStockVendible() != null && item.getStockVendible() > 0)
                 .toList();
 
         model.addAttribute("productos", productosDisponibles);

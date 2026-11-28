@@ -24,10 +24,22 @@ public class InventarioItemDto {
     private Long diasParaVencimiento;
     private boolean proximoAVencer;
     private boolean vencido;
+    private Integer stockVendible;
+    private Integer unidadesVencidas;
     private List<LoteEntity> lotes;
 
     public static InventarioItemDto from(ProductoEntity producto, List<LoteEntity> lotes) {
         int stock = lotes.stream()
+                .mapToInt(l -> l.getStockActual() != null ? l.getStockActual() : 0)
+                .sum();
+        LocalDate hoy = LocalDate.now();
+        int stockVendible = lotes.stream()
+                .filter(l -> l.getFechaVencimiento() != null && !l.getFechaVencimiento().isBefore(hoy))
+                .mapToInt(l -> l.getStockActual() != null ? l.getStockActual() : 0)
+                .sum();
+
+        int unidadesVencidas = lotes.stream()
+                .filter(l -> l.getFechaVencimiento() != null && l.getFechaVencimiento().isBefore(hoy))
                 .mapToInt(l -> l.getStockActual() != null ? l.getStockActual() : 0)
                 .sum();
 
@@ -37,11 +49,12 @@ public class InventarioItemDto {
         String estadoStockLabel;
         String badgeClass;
 
-        if (stock == 0) {
+        // El estado se calcula con lo que se puede vender: el stock vencido no cuenta
+        if (stockVendible == 0) {
             estadoStock = "AGOTADO";
             estadoStockLabel = "Agotado";
             badgeClass = "bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25";
-        } else if (stock <= stockMinimo) {
+        } else if (stockVendible <= stockMinimo) {
             estadoStock = "CRITICO";
             estadoStockLabel = "Stock Bajo";
             badgeClass = "bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25";
@@ -51,26 +64,24 @@ public class InventarioItemDto {
             badgeClass = "bg-success bg-opacity-10 text-success border border-success border-opacity-25";
         }
 
-        LocalDate hoy = LocalDate.now();
         LocalDate proximoVenc = null;
         Long dias = null;
         boolean proximo = false;
         boolean venc = false;
 
-        // Encontrar lote con stock activo y fecha de vencimiento más cercana
+        // Próximo vencimiento: solo entre lotes vendibles (con stock y NO vencidos). Un lote ya vencido
+        // no hace que el producto figure como vencido si todavía tiene otros lotes vigentes.
         var loteMasCercano = lotes.stream()
-                .filter(l -> l.getStockActual() != null && l.getStockActual() > 0 && l.getFechaVencimiento() != null)
+                .filter(l -> l.getStockActual() != null && l.getStockActual() > 0
+                        && l.getFechaVencimiento() != null && !l.getFechaVencimiento().isBefore(hoy))
                 .min((a, b) -> a.getFechaVencimiento().compareTo(b.getFechaVencimiento()));
 
         if (loteMasCercano.isPresent()) {
             proximoVenc = loteMasCercano.get().getFechaVencimiento();
             dias = ChronoUnit.DAYS.between(hoy, proximoVenc);
-            if (dias < 0) {
-                venc = true;
-            } else if (dias <= 45) {
-                proximo = true;
-            }
+            proximo = dias <= 45;
         }
+        venc = stockVendible == 0 && unidadesVencidas > 0;
 
         return InventarioItemDto.builder()
                 .producto(producto)
@@ -82,6 +93,8 @@ public class InventarioItemDto {
                 .fechaProximoVencimiento(proximoVenc)
                 .diasParaVencimiento(dias)
                 .proximoAVencer(proximo)
+                .stockVendible(stockVendible)
+                .unidadesVencidas(unidadesVencidas)
                 .vencido(venc)
                 .lotes(lotes)
                 .build();
